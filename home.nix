@@ -12,6 +12,10 @@
     swaybg
     rofi
     procps
+    grim
+    slurp
+    wl-clipboard
+    fastfetch
 
     # wallpaper            -> random wallpaper + recolor everything
     # wallpaper <file>     -> specific wallpaper
@@ -83,7 +87,31 @@
   };
 
   # ---- Notifications ----
-  services.mako.enable = true;
+    services.mako.enable = true;
+
+    services.network-manager-applet.enable = true;
+
+  programs.hyprlock.enable = true;
+
+  services.hypridle = {
+    enable = true;
+    settings = {
+      general = {
+        lock_cmd = "pidof hyprlock || hyprlock";
+        before_sleep_cmd = "loginctl lock-session";
+      };
+      listener = [
+        {
+          timeout = 300;
+          on-timeout = "loginctl lock-session";
+        }
+        {
+          timeout = 900;
+          on-timeout = "systemctl suspend";
+        }
+      ];
+    };
+  };
 
   # ---- Bar ----
   programs.waybar = {
@@ -330,6 +358,8 @@
         "$mod, Q, killactive,"
         "$mod, V, togglefloating,"
         "$mod, M, fullscreen,"
+        "$mod, L, exec, hyprlock"
+        "$mod SHIFT, S, exec, grim -g \"$(slurp)\" - | wl-copy"
         "$mod SHIFT, E, exit,"
         "$mod, left, movefocus, l"
         "$mod, right, movefocus, r"

@@ -32,6 +32,10 @@
     extraGroups = [ "wheel" "networkmanager" "video" ];
   };
 
+  # ---- Hyprlock ----
+
+  security.pam.services.hyprlock = {};
+
   # ---- Hyprland + auto login ----
   programs.hyprland.enable = true;
   services.displayManager = {
