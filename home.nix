@@ -70,7 +70,7 @@
     };
     settings = {
       background_opacity = "0.85";
-      window_padding_width = 12;
+      window_padding_width = 16;
       confirm_os_window_close = 0;
     };
     extraConfig = "include /home/Vi/.cache/wal/colors-kitty.conf";
@@ -91,15 +91,30 @@
     settings.mainBar = {
       layer = "top";
       position = "top";
-      height = 34;
-      margin-top = 8;
-      margin-left = 12;
-      margin-right = 12;
+      height = 36;
+      margin-top = 10;
+      margin-left = 16;
+      margin-right = 16;
       modules-left = [ "hyprland/workspaces" ];
       modules-center = [ "clock" ];
       modules-right = [ "pulseaudio" "network" "battery" "tray" ];
 
-      clock.format = "{:%a %d %b   %H:%M}";
+      "hyprland/workspaces" = {
+        format = "{icon}";
+        format-icons = {
+          "1" = "I";
+          "2" = "II";
+          "3" = "III";
+          "4" = "IV";
+          "5" = "V";
+        };
+        persistent-workspaces = { "*" = 5; };
+      };
+
+      clock = {
+        format = "{:%H:%M}";
+        tooltip-format = "{:%A, %d %B %Y}";
+      };
       pulseaudio.format = "VOL {volume}%";
       network = {
         format-wifi = "{essid}";
@@ -119,26 +134,42 @@
       }
 
       window#waybar {
-        background: alpha(@background, 0.8);
+        background: transparent;
         color: @foreground;
-        border-radius: 12px;
-        border: 2px solid @color4;
+      }
+
+      #workspaces, #clock, #pulseaudio, #network, #battery, #tray {
+        background: alpha(@background, 0.72);
+        border: 1px solid alpha(@color5, 0.55);
+        border-radius: 14px;
+        padding: 0 14px;
+        margin: 0 4px;
+      }
+
+      #workspaces {
+        padding: 0 6px;
       }
 
       #workspaces button {
-        color: @foreground;
         padding: 0 10px;
+        color: alpha(@foreground, 0.45);
         background: transparent;
       }
 
       #workspaces button.active {
-        background: @color4;
-        color: @background;
-        border-radius: 8px;
+        color: @foreground;
+        background: alpha(@color5, 0.35);
+        border-radius: 10px;
       }
 
-      #clock, #battery, #pulseaudio, #network, #tray {
-        padding: 0 12px;
+      #clock {
+        font-family: "Noto Serif";
+        font-size: 15px;
+        letter-spacing: 2px;
+      }
+
+      #battery.critical {
+        color: #ff6b81;
       }
     '';
   };
@@ -151,46 +182,52 @@
       modi: "drun";
       show-icons: false;
       font: "JetBrainsMono Nerd Font 12";
+      display-drun: "鏡花水月";
     }
 
     window {
-      width: 520px;
+      width: 560px;
       background-color: @bg;
-      border: 2px;
+      border: 1px;
       border-color: @accent;
-      border-radius: 14px;
+      border-radius: 18px;
     }
 
     mainbox {
-      padding: 14px;
+      padding: 22px;
+      spacing: 14px;
       background-color: transparent;
     }
 
     inputbar {
-      padding: 10px;
+      padding: 10px 6px;
+      spacing: 12px;
       background-color: transparent;
       text-color: @fg;
+      border: 0 0 1px 0;
+      border-color: @dim;
       children: [ prompt, entry ];
     }
 
     prompt {
       text-color: @accent;
-      padding: 0 8px 0 0;
+      background-color: transparent;
     }
 
     entry {
       text-color: @fg;
+      background-color: transparent;
     }
 
     listview {
-      lines: 7;
-      padding: 8px 0 0 0;
+      lines: 6;
+      spacing: 4px;
       background-color: transparent;
     }
 
     element {
-      padding: 8px;
-      border-radius: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
       background-color: transparent;
       text-color: @fg;
     }
@@ -218,8 +255,8 @@
 
   xdg.configFile."wal/templates/colors-hypr.conf".text = ''
     general {{
-      col.active_border = rgb({color4.strip})
-      col.inactive_border = rgb({color0.strip})
+      col.active_border = rgb({color4.strip}) rgb({color5.strip}) 45deg
+      col.inactive_border = rgba({color8.strip}55)
     }}
   '';
 
@@ -240,24 +277,40 @@
       ];
 
       general = {
-        gaps_in = 5;
-        gaps_out = 12;
-        border_size = 2;
-        "col.active_border" = "rgb(f2efe6)";
-        "col.inactive_border" = "rgb(2a2a2e)";
+        gaps_in = 6;
+        gaps_out = 16;
+        border_size = 1;
+        "col.active_border" = "rgb(d9d2f0)";
+        "col.inactive_border" = "rgba(ffffff22)";
         layout = "dwindle";
       };
 
       decoration = {
-        rounding = 10;
+        rounding = 14;
+        active_opacity = 1.0;
+        inactive_opacity = 0.92;
         blur = {
           enabled = true;
-          size = 6;
-          passes = 2;
+          size = 8;
+          passes = 3;
+        };
+        shadow = {
+          enabled = true;
+          range = 24;
+          render_power = 3;
+          color = "rgba(00000066)";
         };
       };
 
-      animations.enabled = true;
+      animations = {
+        enabled = true;
+        bezier = [ "calm, 0.22, 1, 0.36, 1" ];
+        animation = [
+          "windows, 1, 6, calm, popin 90%"
+          "fade, 1, 6, calm"
+          "workspaces, 1, 7, calm, fade"
+        ];
+      };
 
       misc = {
         disable_hyprland_logo = true;
