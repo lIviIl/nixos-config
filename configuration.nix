@@ -62,7 +62,7 @@
   ];
 
   # ---- Apps ----
-  programs.firefox.enable = true;
+
 
   # Lets root's git trust your repo (needed for sudo nixos-rebuild with flakes)
   programs.git = {
