@@ -16,6 +16,8 @@
     slurp
     wl-clipboard
     fastfetch
+    papirus-icon-theme
+    bibata-cursors
 
     # wallpaper            -> random wallpaper + recolor everything
     # wallpaper <file>     -> specific wallpaper
@@ -45,7 +47,7 @@
         fi
 
         echo "$img" > "$state"
-        wal -n -q -i "$img"
+        wal -n -q --saturate 0.6 -i "$img"
         pkill swaybg || true
         setsid -f swaybg -i "$img" -m fill
         pkill -SIGUSR2 -f waybar || true
@@ -89,6 +91,21 @@
   # ---- Notifications ----
     services.mako.enable = true;
 
+  gtk = {
+    enable = true;
+    iconTheme = {
+      name = "Papirus-Dark";
+      package = pkgs.papirus-icon-theme;
+    };
+  };
+
+  home.pointerCursor = {
+    gtk.enable = true;
+    package = pkgs.bibata-cursors;
+    name = "Bibata-Modern-Classic";
+    size = 24;
+  };
+
     services.network-manager-applet.enable = true;
 
   programs.hyprlock.enable = true;
@@ -119,7 +136,7 @@
     settings.mainBar = {
       layer = "top";
       position = "top";
-      height = 36;
+      height = 40;
       margin-top = 10;
       margin-left = 16;
       margin-right = 16;
@@ -135,6 +152,12 @@
           "3" = "III";
           "4" = "IV";
           "5" = "V";
+          "6" = "VI";
+          "7" = "VII";
+          "8" = "VIII";
+          "9" = "IX";
+          "10" = "X";
+          default = "·";
         };
         persistent-workspaces = { "*" = 5; };
       };
@@ -143,20 +166,36 @@
         format = "{:%H:%M}";
         tooltip-format = "{:%A, %d %B %Y}";
       };
-      pulseaudio.format = "VOL {volume}%";
+
+      pulseaudio = {
+        format = "VOL {volume}%";
+        format-muted = "MUTED";
+      };
+
       network = {
         format-wifi = "{essid}";
         format-ethernet = "wired";
         format-disconnected = "offline";
       };
-      battery.format = "BAT {capacity}%";
+
+      battery = {
+        states = {
+          warning = 30;
+          critical = 15;
+        };
+        format = "BAT {capacity}%";
+        format-charging = "CHG {capacity}%";
+        format-plugged = "AC {capacity}%";
+      };
+
+      tray.spacing = 10;
     };
     style = ''
       @import "/home/Vi/.cache/wal/colors-waybar.css";
 
       * {
         font-family: "JetBrainsMono Nerd Font";
-        font-size: 13px;
+        font-size: 14px;
         border: none;
         min-height: 0;
       }
@@ -167,11 +206,11 @@
       }
 
       #workspaces, #clock, #pulseaudio, #network, #battery, #tray {
-        background: alpha(@background, 0.72);
-        border: 1px solid alpha(@color5, 0.55);
-        border-radius: 14px;
-        padding: 0 14px;
-        margin: 0 4px;
+        background: alpha(@background, 0.78);
+        border: 1px solid alpha(@color4, 0.7);
+        border-radius: 16px;
+        padding: 0 16px;
+        margin: 0 5px;
       }
 
       #workspaces {
@@ -180,20 +219,40 @@
 
       #workspaces button {
         padding: 0 10px;
-        color: alpha(@foreground, 0.45);
+        margin: 4px 0;
+        color: alpha(@foreground, 0.4);
         background: transparent;
+        border-radius: 10px;
+        box-shadow: none;
+        text-shadow: none;
+      }
+
+      #workspaces button:hover {
+        color: @foreground;
+        background: alpha(@color4, 0.25);
       }
 
       #workspaces button.active {
         color: @foreground;
-        background: alpha(@color5, 0.35);
-        border-radius: 10px;
+        background: alpha(@color4, 0.65);
+      }
+
+      #workspaces button.urgent {
+        color: #ff6b81;
       }
 
       #clock {
         font-family: "Noto Serif";
-        font-size: 15px;
+        font-size: 16px;
         letter-spacing: 2px;
+      }
+
+      #pulseaudio.muted {
+        color: alpha(@foreground, 0.5);
+      }
+
+      #battery.warning {
+        color: #ffd479;
       }
 
       #battery.critical {
@@ -209,8 +268,9 @@
     configuration {
       modi: "drun";
       show-icons: false;
-      font: "JetBrainsMono Nerd Font 12";
+      font: "JetBrainsMono Nerd Font 13";
       display-drun: "鏡花水月";
+      drun-display-format: "{name}";
     }
 
     window {
@@ -225,6 +285,7 @@
       padding: 22px;
       spacing: 14px;
       background-color: transparent;
+      children: [ inputbar, listview ];
     }
 
     inputbar {
@@ -245,22 +306,33 @@
     entry {
       text-color: @fg;
       background-color: transparent;
+      placeholder: "search";
+      placeholder-color: @dim;
     }
 
     listview {
       lines: 6;
-      spacing: 4px;
+      spacing: 6px;
+      scrollbar: false;
+      fixed-height: false;
+      border: 0;
+      padding: 4px 0 0 0;
       background-color: transparent;
     }
 
     element {
       padding: 10px 12px;
       border-radius: 10px;
+    }
+
+    element normal.normal, element alternate.normal,
+    element normal.active, element alternate.active,
+    element normal.urgent, element alternate.urgent {
       background-color: transparent;
       text-color: @fg;
     }
 
-    element selected.normal {
+    element selected.normal, element selected.active, element selected.urgent {
       background-color: @accent;
       text-color: @bg;
     }
@@ -365,11 +437,19 @@
         "$mod, right, movefocus, r"
         "$mod, up, movefocus, u"
         "$mod, down, movefocus, d"
+        "$mod CTRL, right, workspace, +1"
+        "$mod CTRL, left, workspace, e-1"
+        "$mod, mouse_down, workspace, e+1"
+        "$mod, mouse_up, workspace, e-1"
       ] ++ (builtins.concatLists (builtins.genList (i:
-        let ws = toString (i + 1); in [
-          "$mod, ${ws}, workspace, ${ws}"
-          "$mod SHIFT, ${ws}, movetoworkspace, ${ws}"
-        ]) 9));
+        let
+          n = i + 1;
+          ws = toString n;
+          key = if n == 10 then "0" else ws;
+        in [
+          "$mod, ${key}, workspace, ${ws}"
+          "$mod SHIFT, ${key}, movetoworkspace, ${ws}"
+        ]) 10));
 
       bindm = [
         "$mod, mouse:272, movewindow"
