@@ -75,9 +75,10 @@
       size = 11;
     };
     settings = {
-      background_opacity = "0.85";
-      window_padding_width = 16;
+      background_opacity = "0.9";
+      window_padding_width = 14;
       confirm_os_window_close = 0;
+      cursor_shape = "block";
     };
     extraConfig = "include /home/Vi/.cache/wal/colors-kitty.conf";
   };
@@ -89,7 +90,19 @@
   };
 
   # ---- Notifications ----
-    services.mako.enable = true;
+  services.mako = {
+    enable = true;
+    settings = {
+      font = "JetBrainsMono Nerd Font 11";
+      background-color = "#0a0a0aee";
+      text-color = "#f2f2f2";
+      border-color = "#f2f2f2";
+      border-size = 2;
+      border-radius = 4;
+      padding = 12;
+      default-timeout = 5000;
+    };
+  };
 
   gtk = {
     enable = true;
@@ -136,10 +149,10 @@
     settings.mainBar = {
       layer = "top";
       position = "top";
-      height = 40;
-      margin-top = 10;
-      margin-left = 16;
-      margin-right = 16;
+      height = 38;
+      margin-top = 8;
+      margin-left = 12;
+      margin-right = 12;
       modules-left = [ "hyprland/workspaces" ];
       modules-center = [ "clock" ];
       modules-right = [ "pulseaudio" "network" "battery" "tray" ];
@@ -147,16 +160,19 @@
       "hyprland/workspaces" = {
         format = "{icon}";
         format-icons = {
-          "1" = "I";
-          "2" = "II";
-          "3" = "III";
-          "4" = "IV";
-          "5" = "V";
-          "6" = "VI";
-          "7" = "VII";
-          "8" = "VIII";
-          "9" = "IX";
-          "10" = "X";
+          "1" = "A";
+          "2" = "2";
+          "3" = "3";
+          "4" = "4";
+          "5" = "5";
+          "6" = "6";
+          "7" = "7";
+          "8" = "8";
+          "9" = "9";
+          "10" = "10";
+          "11" = "J";
+          "12" = "Q";
+          "13" = "K";
           default = "·";
         };
         persistent-workspaces = { "*" = 5; };
@@ -196,6 +212,7 @@
       * {
         font-family: "JetBrainsMono Nerd Font";
         font-size: 14px;
+        font-weight: bold;
         border: none;
         min-height: 0;
       }
@@ -206,45 +223,43 @@
       }
 
       #workspaces, #clock, #pulseaudio, #network, #battery, #tray {
-        background: alpha(@background, 0.78);
-        border: 1px solid alpha(@color4, 0.7);
-        border-radius: 16px;
-        padding: 0 16px;
-        margin: 0 5px;
+        background: alpha(@background, 0.88);
+        border: 2px solid @foreground;
+        border-radius: 4px;
+        padding: 0 14px;
+        margin: 0 4px;
       }
 
       #workspaces {
-        padding: 0 6px;
+        padding: 0 4px;
       }
 
       #workspaces button {
         padding: 0 10px;
-        margin: 4px 0;
-        color: alpha(@foreground, 0.4);
+        margin: 3px 2px;
+        color: alpha(@foreground, 0.5);
         background: transparent;
-        border-radius: 10px;
+        border-radius: 3px;
         box-shadow: none;
         text-shadow: none;
       }
 
       #workspaces button:hover {
         color: @foreground;
-        background: alpha(@color4, 0.25);
+        background: alpha(@color4, 0.3);
       }
 
       #workspaces button.active {
-        color: @foreground;
-        background: alpha(@color4, 0.65);
+        color: @background;
+        background: @color4;
       }
 
       #workspaces button.urgent {
-        color: #ff6b81;
+        color: #ff4d5e;
       }
 
       #clock {
-        font-family: "Noto Serif";
-        font-size: 16px;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
       }
 
       #pulseaudio.muted {
@@ -256,7 +271,7 @@
       }
 
       #battery.critical {
-        color: #ff6b81;
+        color: #ff4d5e;
       }
     '';
   };
@@ -268,21 +283,21 @@
     configuration {
       modi: "drun";
       show-icons: false;
-      font: "JetBrainsMono Nerd Font 13";
-      display-drun: "鏡花水月";
+      font: "JetBrainsMono Nerd Font Bold 13";
+      display-drun: "嘘喰い";
       drun-display-format: "{name}";
     }
 
     window {
-      width: 560px;
+      width: 540px;
       background-color: @bg;
-      border: 1px;
-      border-color: @accent;
-      border-radius: 18px;
+      border: 2px;
+      border-color: @fg;
+      border-radius: 4px;
     }
 
     mainbox {
-      padding: 22px;
+      padding: 20px;
       spacing: 14px;
       background-color: transparent;
       children: [ inputbar, listview ];
@@ -293,8 +308,8 @@
       spacing: 12px;
       background-color: transparent;
       text-color: @fg;
-      border: 0 0 1px 0;
-      border-color: @dim;
+      border: 0 0 2px 0;
+      border-color: @accent;
       children: [ prompt, entry ];
     }
 
@@ -306,7 +321,7 @@
     entry {
       text-color: @fg;
       background-color: transparent;
-      placeholder: "search";
+      placeholder: "place your bet";
       placeholder-color: @dim;
     }
 
@@ -322,7 +337,7 @@
 
     element {
       padding: 10px 12px;
-      border-radius: 10px;
+      border-radius: 3px;
     }
 
     element normal.normal, element alternate.normal,
@@ -333,7 +348,7 @@
     }
 
     element selected.normal, element selected.active, element selected.urgent {
-      background-color: @accent;
+      background-color: @fg;
       text-color: @bg;
     }
 
@@ -355,8 +370,8 @@
 
   xdg.configFile."wal/templates/colors-hypr.conf".text = ''
     general {{
-      col.active_border = rgb({color4.strip}) rgb({color5.strip}) 45deg
-      col.inactive_border = rgba({color8.strip}55)
+      col.active_border = rgb({color4.strip}) rgb({foreground.strip}) 45deg
+      col.inactive_border = rgba({color8.strip}66)
     }}
   '';
 
@@ -377,38 +392,38 @@
       ];
 
       general = {
-        gaps_in = 6;
-        gaps_out = 16;
-        border_size = 1;
-        "col.active_border" = "rgb(d9d2f0)";
+        gaps_in = 4;
+        gaps_out = 10;
+        border_size = 2;
+        "col.active_border" = "rgb(ffffff)";
         "col.inactive_border" = "rgba(ffffff22)";
         layout = "dwindle";
       };
 
       decoration = {
-        rounding = 14;
+        rounding = 4;
         active_opacity = 1.0;
-        inactive_opacity = 0.92;
+        inactive_opacity = 0.94;
         blur = {
           enabled = true;
-          size = 8;
-          passes = 3;
+          size = 5;
+          passes = 2;
         };
         shadow = {
           enabled = true;
-          range = 24;
+          range = 16;
           render_power = 3;
-          color = "rgba(00000066)";
+          color = "rgba(00000099)";
         };
       };
 
       animations = {
         enabled = true;
-        bezier = [ "calm, 0.22, 1, 0.36, 1" ];
+        bezier = [ "flick, 0.2, 1.2, 0.3, 1" ];
         animation = [
-          "windows, 1, 6, calm, popin 90%"
-          "fade, 1, 6, calm"
-          "workspaces, 1, 7, calm, fade"
+          "windows, 1, 4, flick, popin 80%"
+          "fade, 1, 4, flick"
+          "workspaces, 1, 5, flick, slide"
         ];
       };
 
