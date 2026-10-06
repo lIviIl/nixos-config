@@ -16,10 +16,13 @@
 
       general.layout = "dwindle";
 
-      dwindle = {
-        pseudotile = true;
-        preserve_split = true;
-      };
+      dwindle.preserve_split = true;
+
+      # Hyprland 0.56 started honoring "launch maximized" requests from apps,
+      # which makes new windows cover the screen instead of tiling. Ignore them.
+      windowrule = [
+        "match:class .*, suppress_event maximize"
+      ];
 
       input.touchpad = {
         natural_scroll = true;
@@ -31,8 +34,6 @@
         "$mod, Q, killactive,"
         "$mod, V, togglefloating,"
         "$mod, M, fullscreen,"
-        "$mod, T, layoutmsg, togglesplit"
-        "$mod, P, pseudo,"
         "$mod SHIFT, E, exit,"
         "$mod, left, movefocus, l"
         "$mod, right, movefocus, r"
