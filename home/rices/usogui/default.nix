@@ -8,6 +8,7 @@
     ./kitty.nix
     ./mako.nix
     ./gtk.nix
+    ./wallpaper-picker.nix
     ./wal-templates.nix
   ];
 }
