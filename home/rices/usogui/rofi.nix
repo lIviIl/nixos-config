@@ -6,9 +6,9 @@ in
 {
   home.packages = [ pkgs.rofi ];
 
-  wayland.windowManager.hyprland.settings.bind = [
-    "$mod, D, exec, rofi -show drun"
-  ];
+  wayland.windowManager.hyprland.extraConfig = ''
+    hl.bind("SUPER + D", hl.dsp.exec_cmd("rofi -show drun"))
+  '';
 
   xdg.configFile."rofi/config.rasi".text = ''
     @import "${walDir}/colors-rofi.rasi"

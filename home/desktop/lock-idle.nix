@@ -29,8 +29,8 @@
     };
   };
 
-  wayland.windowManager.hyprland.settings.bind = [
-    "$mod, L, exec, hyprlock"
-    "$mod SHIFT, S, exec, grim -g \"$(slurp)\" - | wl-copy"
-  ];
+  wayland.windowManager.hyprland.extraConfig = ''
+    hl.bind("SUPER + L", hl.dsp.exec_cmd("hyprlock"))
+    hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))
+  '';
 }

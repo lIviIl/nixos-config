@@ -11,10 +11,10 @@
     }}
   '';
 
-  xdg.configFile."wal/templates/colors-hypr.conf".text = ''
-    general {{
-      col.active_border = rgb({color4.strip}) rgb({foreground.strip}) 45deg
-      col.inactive_border = rgba({color8.strip}66)
+  xdg.configFile."wal/templates/colors-hypr.lua".text = ''
+    return {{
+      active = {{ "rgba({color4.strip}ff)", "rgba({foreground.strip}ff)" }},
+      inactive = "rgba({color8.strip}66)",
     }}
   '';
 }

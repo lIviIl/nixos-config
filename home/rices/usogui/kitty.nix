@@ -19,7 +19,7 @@ in
     extraConfig = "include ${walDir}/colors-kitty.conf";
   };
 
-  wayland.windowManager.hyprland.settings.bind = [
-    "$mod, Return, exec, kitty"
-  ];
+  wayland.windowManager.hyprland.extraConfig = ''
+    hl.bind("SUPER + RETURN", hl.dsp.exec_cmd("kitty"))
+  '';
 }
