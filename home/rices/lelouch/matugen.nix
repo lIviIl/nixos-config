@@ -15,8 +15,6 @@
   xdg.configFile."matugen/config.toml".text = ''
     [config]
 
-    [config.wallpaper]
-    set = false
 
     # Blended toward the wallpaper's palette so they always look cohesive
     [config.custom_colors]
