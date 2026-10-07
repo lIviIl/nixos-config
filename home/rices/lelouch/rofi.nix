@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  walDir = "${config.home.homeDirectory}/.cache/wal";
+  walDir = "${config.home.homeDirectory}/.cache/matugen";
 in
 {
   home.packages = [ pkgs.rofi ];

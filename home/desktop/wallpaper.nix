@@ -2,17 +2,16 @@
 
 {
   home.packages = with pkgs; [
-    pywal16
-    imagemagick
     swaybg
     procps
 
     # wallpaper            -> random wallpaper + recolor everything
     # wallpaper <file>     -> specific wallpaper
     # wallpaper restore    -> used at login
+    # Recoloring is done by `recolor`, which each rice provides.
     (writeShellApplication {
       name = "wallpaper";
-      runtimeInputs = [ pywal16 swaybg procps pywalfox-native ];
+      runtimeInputs = [ swaybg procps ];
       text = ''
         dir="$HOME/Pictures/Wallpapers"
         state="$HOME/.cache/current-wallpaper"
@@ -35,12 +34,10 @@
         fi
 
         echo "$img" > "$state"
-        wal -n -q --saturate 0.6 -i "$img"
+        recolor "$img"
         pkill swaybg || true
         setsid -f swaybg -i "$img" -m fill
-        pkill -SIGUSR2 -f waybar || true
         hyprctl reload > /dev/null || true
-        pywalfox update > /dev/null 2>&1 || true
       '';
     })
   ];

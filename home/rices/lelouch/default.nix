@@ -9,6 +9,6 @@
     ./mako.nix
     ./rofi.nix
     ./wallpaper-picker.nix
-    ./wal-templates.nix
+    ./matugen.nix
   ];
 }

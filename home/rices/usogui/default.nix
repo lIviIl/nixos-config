@@ -9,6 +9,7 @@
     ./mako.nix
     ./gtk.nix
     ./wallpaper-picker.nix
+    ./recolor.nix
     ./wal-templates.nix
   ];
 }

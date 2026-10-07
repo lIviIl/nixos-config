@@ -54,7 +54,11 @@ Row {
 
     readonly property string batteryText: (charging ? "CHG " : plugged ? "AC " : "BAT ") + Math.round(batteryPct) + "%"
 
+    // Scroll to change the volume, click to mute
     Pill {
+        onClicked: Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
+        onScrolled: direction => Quickshell.execDetached(["wpctl", "set-volume", "-l", "1", "@DEFAULT_AUDIO_SINK@", direction > 0 ? "5%+" : "5%-"])
+
         BarText { text: root.volumeText }
     }
 

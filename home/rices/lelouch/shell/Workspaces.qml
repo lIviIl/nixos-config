@@ -35,7 +35,7 @@ Pill {
                 id: label
                 anchors.centerIn: parent
                 text: root.labels[tile.n - 1]
-                color: tile.focused ? Theme.bg : Theme.alpha(Theme.fg, tile.exists ? 0.85 : 0.35)
+                color: tile.focused ? Theme.onPrimary : Theme.alpha(Theme.fg, tile.exists ? 0.85 : 0.35)
             }
 
             MouseArea {
