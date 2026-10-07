@@ -5,7 +5,7 @@
     ./git.nix
     ./firefox.nix
     ./desktop
-    ./rices/usogui   # <- change this line to switch rice
+    ./rices/lelouch   # <- change this line to switch rice
   ];
 
   home.username = "Vi";

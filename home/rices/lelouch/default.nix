@@ -1,0 +1,14 @@
+{ ... }:
+
+{
+  imports = [
+    ./hyprland.nix
+    ./quickshell.nix
+    ./kitty.nix
+    ./gtk.nix
+    ./mako.nix
+    ./rofi.nix
+    ./wallpaper-picker.nix
+    ./wal-templates.nix
+  ];
+}
