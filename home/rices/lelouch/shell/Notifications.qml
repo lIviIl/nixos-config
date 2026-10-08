@@ -11,8 +11,8 @@ Scope {
         }
     }
 
+    // Always mapped (1px tall when empty) so the window never appears mid-animation
     PanelWindow {
-        visible: server.trackedNotifications.values.length > 0
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
 
@@ -28,7 +28,7 @@ Scope {
 
         // Extra room on the left so the rebound isn't clipped
         implicitWidth: 380 + 48
-        implicitHeight: stack.implicitHeight
+        implicitHeight: Math.max(1, stack.implicitHeight)
 
         Column {
             id: stack
