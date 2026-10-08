@@ -34,7 +34,7 @@
         fi
 
         echo "$img" > "$state"
-        recolor "$img"
+        recolor "$img" || echo "recolor failed" >&2
         pkill swaybg || true
         setsid -f swaybg -i "$img" -m fill
         hyprctl reload > /dev/null || true

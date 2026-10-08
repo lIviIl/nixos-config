@@ -8,7 +8,7 @@
     # scheme-content, scheme-expressive, scheme-fidelity, scheme-rainbow
     (pkgs.writeShellScriptBin "recolor" ''
       mkdir -p "$HOME/.cache/matugen"
-      exec ${pkgs.matugen}/bin/matugen image "$1" -m dark --type scheme-tonal-spot
+      exec ${pkgs.matugen}/bin/matugen image "$1" -m dark --type scheme-tonal-spot --prefer saturation
     '')
   ];
 

@@ -104,7 +104,7 @@ PanelWindow {
                     }
                 }
 
-                // Slider: drag, or click, then release to apply
+                // Slider: the volume is applied while dragging
                 MouseArea {
                     id: slider
                     anchors.left: parent.left
@@ -113,20 +113,51 @@ PanelWindow {
                     height: 30
 
                     property real preview: -1
+                    property real applied: -1
 
                     function valueAt(x) {
                         return Math.max(0, Math.min(1, x / width));
                     }
 
-                    onPressed: mouse => preview = valueAt(mouse.x)
+                    function push() {
+                        if (preview >= 0 && preview !== applied) {
+                            applied = preview;
+                            win.setVolume(preview);
+                        }
+                    }
+
+                    onPressed: mouse => {
+                        settle.stop();
+                        preview = valueAt(mouse.x);
+                        push();
+                    }
+
                     onPositionChanged: mouse => {
                         if (pressed)
                             preview = valueAt(mouse.x);
                     }
+
                     onReleased: {
-                        if (preview >= 0)
-                            win.setVolume(preview);
-                        preview = -1;
+                        push();
+                        settle.restart();
+                    }
+
+                    // Sends the dragged value while the mouse is held down
+                    Timer {
+                        interval: 60
+                        repeat: true
+                        running: slider.pressed
+                        onTriggered: slider.push()
+                    }
+
+                    // After release, keep showing the chosen value until the system volume has caught up
+                    Timer {
+                        id: settle
+                        interval: 500
+                        onTriggered: {
+                            slider.preview = -1;
+                            slider.applied = -1;
+                        }
                     }
 
                     Rectangle {
