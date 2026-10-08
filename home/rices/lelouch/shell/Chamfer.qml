@@ -6,6 +6,7 @@ Item {
     id: root
 
     property real cut: 10
+    property bool layered: true
     property real strokeWidth: 1
     property color strokeColor: Theme.alpha(Theme.gold, 0.85)
     property color fillTop: Theme.alpha(Theme.bg, Theme.glass)
@@ -19,7 +20,7 @@ Item {
 
     Shape {
         anchors.fill: parent
-        layer.enabled: true
+        layer.enabled: root.layered
         layer.samples: 4
 
         ShapePath {

@@ -4,8 +4,9 @@
   home.packages = [
     pkgs.matugen
 
-    # Called by `wallpaper`. Change the scheme to taste, e.g.
-    # scheme-content, scheme-expressive, scheme-fidelity, scheme-rainbow
+    # Called by `wallpaper`. --prefer saturation picks the source color automatically
+    # (without it matugen asks, and fails when there is no terminal).
+    # Other schemes to try: scheme-content, scheme-expressive, scheme-fidelity, scheme-rainbow
     (pkgs.writeShellScriptBin "recolor" ''
       mkdir -p "$HOME/.cache/matugen"
       exec ${pkgs.matugen}/bin/matugen image "$1" -m dark --type scheme-tonal-spot --prefer saturation
@@ -14,7 +15,6 @@
 
   xdg.configFile."matugen/config.toml".text = ''
     [config]
-
 
     # Blended toward the wallpaper's palette so they always look cohesive
     [config.custom_colors]
@@ -38,10 +38,6 @@
     input_path = '~/.config/matugen/templates/colors-kitty.conf'
     output_path = '~/.cache/matugen/colors-kitty.conf'
     post_hook = 'pkill -USR1 kitty'
-
-    [templates.rofi]
-    input_path = '~/.config/matugen/templates/colors-rofi.rasi'
-    output_path = '~/.cache/matugen/colors-rofi.rasi'
   '';
 
   xdg.configFile."matugen/templates/colors.json".text = ''
@@ -50,11 +46,8 @@
       "foreground": "{{ colors.on_surface.default.hex }}",
       "primary": "{{ colors.primary.default.hex }}",
       "onPrimary": "{{ colors.on_primary.default.hex }}",
-      "secondary": "{{ colors.secondary.default.hex }}",
-      "tertiary": "{{ colors.tertiary.default.hex }}",
       "outline": "{{ colors.outline.default.hex }}",
-      "gold": "{{ colors.gold.default.hex }}",
-      "error": "{{ colors.error.default.hex }}"
+      "gold": "{{ colors.gold.default.hex }}"
     }
   '';
 
@@ -90,14 +83,5 @@
     color14 {{ colors.cyan.default.hex }}
     color7  {{ colors.on_surface_variant.default.hex }}
     color15 {{ colors.on_surface.default.hex }}
-  '';
-
-  xdg.configFile."matugen/templates/colors-rofi.rasi".text = ''
-    * {
-      bg: {{ colors.surface.default.hex }};
-      fg: {{ colors.on_surface.default.hex }};
-      accent: {{ colors.primary.default.hex }};
-      dim: {{ colors.outline.default.hex }};
-    }
   '';
 }

@@ -13,8 +13,13 @@ Scope {
 
     // Always mapped (1px tall when empty) so the window never appears mid-animation
     PanelWindow {
+        // TEMPORARY: the "fixedsize" experiment keeps the window the same size and
+        // makes everything outside the toasts click-through
+        readonly property bool fixedSize: Quickshell.env("TOAST_TEST") === "fixedsize"
+
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
+        mask: Region { item: stack }
 
         anchors {
             top: true
@@ -28,7 +33,7 @@ Scope {
 
         // Extra room on the left so the rebound isn't clipped
         implicitWidth: 380 + 48
-        implicitHeight: Math.max(1, stack.implicitHeight)
+        implicitHeight: fixedSize ? 320 : Math.max(1, stack.implicitHeight)
 
         Column {
             id: stack

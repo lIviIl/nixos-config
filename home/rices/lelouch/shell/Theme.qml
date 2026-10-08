@@ -30,9 +30,7 @@ Singleton {
     readonly property color gold:      palette ? palette.gold : "#c9a227"
     readonly property color primary:   palette ? palette.primary : "#8b5cf6"
     readonly property color onPrimary: palette ? palette.onPrimary : "#120d1f"
-    readonly property color secondary: palette ? palette.secondary : "#b46bd6"
     readonly property color outline:   palette ? palette.outline : "#8a80a8"
-    readonly property color danger:    palette ? palette.error : "#e0364f"
 
     // Geass red: constant, not taken from the wallpaper
     readonly property color crimson: "#c1121f"

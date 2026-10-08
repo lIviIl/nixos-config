@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Services.Notifications
 
 // One notification: slides in from the right with a soft rebound.
@@ -6,6 +7,9 @@ Item {
     id: toast
 
     required property var modelData
+
+    // TEMPORARY: TOAST_TEST picks an experiment (plain, nolayer, fadeonly, slideonly, delay)
+    readonly property string test: Quickshell.env("TOAST_TEST") || ""
 
     readonly property bool critical: modelData.urgency === NotificationUrgency.Critical
     readonly property bool low: modelData.urgency === NotificationUrgency.Low
@@ -18,12 +22,25 @@ Item {
         id: card
         width: parent.width
         height: parent.height
+        x: toast.test === "fadeonly" ? 0 : 160
+        opacity: toast.test === "slideonly" ? 1 : 0
+        visible: toast.test !== "delay"
 
-        // Starts invisible and off to the right, so there is no first-frame flash
-        x: 160
-        opacity: 0
+        Component.onCompleted: {
+            if (toast.test === "delay")
+                delayTimer.start();
+            else
+                enter.start();
+        }
 
-        Component.onCompleted: enter.start()
+        Timer {
+            id: delayTimer
+            interval: 80
+            onTriggered: {
+                card.visible = true;
+                enter.start();
+            }
+        }
 
         ParallelAnimation {
             id: enter
@@ -47,10 +64,20 @@ Item {
 
         Chamfer {
             anchors.fill: parent
+            visible: toast.test !== "plain"
+            layered: toast.test !== "nolayer"
             cut: 8
             strokeColor: Theme.alpha(toast.accent, 0.9)
             fillTop: Theme.alpha(Theme.mix(Theme.bg, Theme.primary, 0.12), 0.95)
             fillBottom: Theme.alpha(Theme.bg, 0.95)
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: toast.test === "plain"
+            color: Theme.alpha(Theme.bg, 0.95)
+            border.width: 1
+            border.color: Theme.alpha(toast.accent, 0.9)
         }
 
         // Left accent: crimson for critical, gold for normal
