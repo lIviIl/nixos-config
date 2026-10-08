@@ -16,7 +16,7 @@
   networking.networkmanager.enable = true;
 
   # ---- PASTE YOUR OLD time.timeZone / i18n / console keymap LINES HERE ----
-  time.timeZone = "Africa/cairo";
+  time.timeZone = "Africa/Cairo";
   i18n.defaultLocale = "en_US.UTF-8";
 
   users.users.Vi = {
