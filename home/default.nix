@@ -4,6 +4,7 @@
   imports = [
     ./git.nix
     ./firefox.nix
+    ./packages.nix
     ./desktop
     ./rices/lelouch   # <- change this line to switch rice
   ];

@@ -26,12 +26,14 @@ Scope {
             right: 12
         }
 
-        implicitWidth: 380
+        // Extra room on the left so the rebound isn't clipped
+        implicitWidth: 380 + 48
         implicitHeight: stack.implicitHeight
 
         Column {
             id: stack
-            width: parent.width
+            anchors.right: parent.right
+            width: 380
             spacing: 8
 
             Repeater {

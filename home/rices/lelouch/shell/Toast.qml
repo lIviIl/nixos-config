@@ -18,18 +18,31 @@ Item {
         id: card
         width: parent.width
         height: parent.height
-        x: 440
 
-        Component.onCompleted: slide.start()
+        // Starts invisible and off to the right, so there is no first-frame flash
+        x: 160
+        opacity: 0
 
-        NumberAnimation {
-            id: slide
-            target: card
-            property: "x"
-            to: 0
-            duration: 420
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.4
+        Component.onCompleted: enter.start()
+
+        ParallelAnimation {
+            id: enter
+
+            NumberAnimation {
+                target: card
+                property: "x"
+                to: 0
+                duration: 400
+                easing.type: Easing.OutBack
+                easing.overshoot: 1.2
+            }
+
+            NumberAnimation {
+                target: card
+                property: "opacity"
+                to: 1
+                duration: 140
+            }
         }
 
         Chamfer {
