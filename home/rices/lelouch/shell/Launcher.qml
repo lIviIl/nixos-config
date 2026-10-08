@@ -5,8 +5,18 @@ import Quickshell.Io
 Panel {
     id: root
 
-    cardWidth: 580
-    cardHeight: 430
+    readonly property int maxRows: 7
+    readonly property int visibleRows: Math.max(1, Math.min(results.length, maxRows))
+
+    cardWidth: 640
+    cardHeight: 100 + visibleRows * 46
+
+    Behavior on cardHeight {
+        NumberAnimation {
+            duration: 120
+            easing.type: Easing.OutCubic
+        }
+    }
 
     // 0 = name starts with the query, 1 = name contains it, 2 = description/keywords match, -1 = no match
     function score(entry, q) {
@@ -64,17 +74,19 @@ Panel {
 
     Column {
         anchors.fill: parent
-        anchors.margins: 20
-        spacing: 14
+        anchors.margins: 18
+        spacing: 12
 
+        // Header: the kanji and the input share a baseline
         Item {
             width: parent.width
-            height: 36
+            height: 38
 
             Text {
                 id: title
                 anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: 4
+                anchors.baseline: input.baseline
                 text: "絶対遵守"
                 color: Theme.gold
                 font.family: Theme.serif
@@ -91,7 +103,7 @@ Panel {
                 selectionColor: Theme.primary
                 selectedTextColor: Theme.onPrimary
                 font.family: Theme.mono
-                font.pixelSize: 16
+                font.pixelSize: 17
                 clip: true
 
                 onTextChanged: resultsView.currentIndex = 0
@@ -105,32 +117,41 @@ Panel {
 
             Text {
                 anchors.left: input.left
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.baseline: input.baseline
                 visible: input.text === ""
                 text: "command me"
-                color: Theme.alpha(Theme.fg, 0.4)
+                color: Theme.alpha(Theme.fg, 0.5)
                 font.family: Theme.mono
-                font.pixelSize: 16
+                font.pixelSize: 17
             }
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.alpha(Theme.gold, 0.6)
+            color: Theme.alpha(Theme.gold, 0.7)
         }
 
         ListView {
             id: resultsView
             width: parent.width
-            height: 320
+            height: root.visibleRows * 46
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             spacing: 4
             model: root.results
             currentIndex: 0
 
-            delegate: Rectangle {
+            Text {
+                anchors.centerIn: parent
+                visible: root.results.length === 0
+                text: "No match"
+                color: Theme.alpha(Theme.fg, 0.6)
+                font.family: Theme.mono
+                font.pixelSize: 14
+            }
+
+            delegate: Item {
                 id: row
 
                 required property var modelData
@@ -138,31 +159,44 @@ Panel {
                 readonly property bool selected: index === resultsView.currentIndex
 
                 width: resultsView.width
-                height: 40
-                radius: 8
-                color: selected ? Theme.primary : "transparent"
+                height: 42
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Rectangle {
+                    anchors.fill: parent
+                    color: row.selected ? Theme.alpha(Theme.primary, 0.28) : "transparent"
+
+                    Behavior on color { ColorAnimation { duration: 100 } }
+                }
+
+                // Crimson marker on the selected row
+                Rectangle {
+                    width: 3
+                    height: parent.height
+                    color: Theme.crimson
+                    opacity: row.selected ? 1 : 0
+
+                    Behavior on opacity { NumberAnimation { duration: 100 } }
+                }
 
                 Text {
                     anchors.left: parent.left
-                    anchors.leftMargin: 14
+                    anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     text: row.modelData.name
-                    color: row.selected ? Theme.onPrimary : Theme.fg
+                    color: Theme.fg
                     font.family: Theme.mono
-                    font.pixelSize: 14
+                    font.pixelSize: 15
                     font.bold: true
                 }
 
                 Text {
                     anchors.right: parent.right
-                    anchors.rightMargin: 14
+                    anchors.rightMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     text: row.modelData.entry.genericName
-                    color: row.selected ? Theme.alpha(Theme.onPrimary, 0.7) : Theme.alpha(Theme.fg, 0.45)
+                    color: Theme.alpha(Theme.fg, 0.75)
                     font.family: Theme.mono
-                    font.pixelSize: 12
+                    font.pixelSize: 13
                 }
 
                 MouseArea {

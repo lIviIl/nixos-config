@@ -1,26 +1,27 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 
 Row {
     id: root
-    spacing: 8
+    spacing: 14
+
+    component Divider: Rectangle {
+        width: 1
+        height: 16
+        color: Theme.alpha(Theme.gold, 0.45)
+    }
 
     // ---- Volume ----
     readonly property var sink: Pipewire.defaultAudioSink
+    readonly property real volume: sink && sink.audio ? sink.audio.volume : 0
+    readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
 
     PwObjectTracker {
         objects: [root.sink]
-    }
-
-    readonly property string volumeText: {
-        if (!sink || !sink.audio)
-            return "VOL --";
-        if (sink.audio.muted)
-            return "MUTED";
-        return "VOL " + Math.round(sink.audio.volume * 100) + "%";
     }
 
     // ---- Wi-Fi ----
@@ -45,6 +46,41 @@ Row {
         onTriggered: wifiProc.running = true
     }
 
+    // ---- Keyboard layout ----
+    property string layoutName: "US"
+
+    function shortName(name) {
+        const m = name.match(/\(([^)]+)\)/);
+        return (m ? m[1] : name.slice(0, 2)).toUpperCase();
+    }
+
+    Process {
+        command: ["hyprctl", "devices", "-j"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const keyboards = JSON.parse(this.text).keyboards;
+                    const kb = keyboards.find(k => k.main) || keyboards[0];
+                    if (kb)
+                        root.layoutName = root.shortName(kb.active_keymap);
+                } catch (e) {
+                }
+            }
+        }
+    }
+
+    Connections {
+        target: Hyprland
+
+        function onRawEvent(event) {
+            if (event.name === "activelayout") {
+                const d = event.data;
+                root.layoutName = root.shortName(d.slice(d.lastIndexOf(",") + 1));
+            }
+        }
+    }
+
     // ---- Battery ----
     readonly property var battery: UPower.displayDevice
     readonly property real batteryPct: battery.percentage > 1 ? battery.percentage : battery.percentage * 100
@@ -52,26 +88,39 @@ Row {
     readonly property bool plugged: battery.state === UPowerDeviceState.FullyCharged
     readonly property bool low: batteryPct <= 15 && !charging && !plugged
 
-    readonly property string batteryText: (charging ? "CHG " : plugged ? "AC " : "BAT ") + Math.round(batteryPct) + "%"
+    StatusItem {
+        kind: "volume"
+        text: root.muted ? "MUTE" : Math.round(root.volume * 100) + "%"
+        level: root.volume
+        muted: root.muted
 
-    // Scroll to change the volume, click to mute
-    Pill {
-        onClicked: Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
+        // Click opens the volume panel; scroll changes the volume
+        onClicked: Ui.volumeOpen = !Ui.volumeOpen
         onScrolled: direction => Quickshell.execDetached(["wpctl", "set-volume", "-l", "1", "@DEFAULT_AUDIO_SINK@", direction > 0 ? "5%+" : "5%-"])
-
-        BarText { text: root.volumeText }
     }
 
-    Pill {
-        BarText { text: root.ssid }
+    Divider { anchors.verticalCenter: parent.verticalCenter }
+
+    StatusItem {
+        kind: "wifi"
+        text: root.ssid
+        level: root.ssid === "offline" ? 0 : 1
     }
 
-    Pill {
-        borderColor: root.low ? Theme.danger : Theme.alpha(Theme.gold, 0.8)
+    Divider { anchors.verticalCenter: parent.verticalCenter }
 
-        BarText {
-            text: root.batteryText
-            color: root.low ? Theme.danger : Theme.fg
-        }
+    StatusItem {
+        kind: "keyboard"
+        text: root.layoutName
+    }
+
+    Divider { anchors.verticalCenter: parent.verticalCenter }
+
+    StatusItem {
+        kind: "battery"
+        text: Math.round(root.batteryPct) + "%"
+        level: root.batteryPct / 100
+        charging: root.charging
+        tint: root.low ? Theme.crimson : Theme.fg
     }
 }

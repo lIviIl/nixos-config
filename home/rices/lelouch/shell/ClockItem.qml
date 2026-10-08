@@ -1,10 +1,8 @@
 import QtQuick
 
-Pill {
+Row {
     id: root
-
-    borderColor: Theme.gold
-    padding: 20
+    spacing: 9
 
     property date now: new Date()
 
@@ -15,11 +13,20 @@ Pill {
         onTriggered: root.now = new Date()
     }
 
+    Icon {
+        anchors.verticalCenter: parent.verticalCenter
+        kind: "clock"
+        tint: Theme.gold
+        hours: root.now.getHours()
+        minutes: root.now.getMinutes()
+    }
+
     Text {
+        anchors.verticalCenter: parent.verticalCenter
         text: Qt.formatDateTime(root.now, "HH:mm")
         color: Theme.fg
         font.family: Theme.serif
-        font.pixelSize: 17
+        font.pixelSize: 18
         font.letterSpacing: 3
     }
 }

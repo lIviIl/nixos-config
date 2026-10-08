@@ -11,7 +11,7 @@ in
       size = 11;
     };
     settings = {
-      background_opacity = "0.9";
+      background_opacity = "0.72";
       window_padding_width = 14;
       confirm_os_window_close = 0;
       cursor_shape = "block";

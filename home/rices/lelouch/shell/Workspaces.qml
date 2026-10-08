@@ -3,18 +3,16 @@ import Quickshell
 import Quickshell.Hyprland
 
 // Workspaces 1-5 are always shown; 6-10 appear while they are in use.
-Pill {
+Row {
     id: root
-
-    padding: 6
-    contentSpacing: 2
+    spacing: 2
 
     readonly property var labels: ["K", "Q", "R", "B", "N", "P", "VII", "VIII", "IX", "X"]
 
     Repeater {
         model: 10
 
-        Rectangle {
+        Item {
             id: tile
 
             required property int index
@@ -24,18 +22,25 @@ Pill {
             readonly property bool focused: Hyprland.focusedWorkspace !== null && Hyprland.focusedWorkspace.id === n
 
             visible: n <= 5 || exists
-            width: Math.max(28, label.implicitWidth + 16)
-            height: 24
-            radius: 6
-            color: focused ? Theme.primary : "transparent"
+            width: Math.max(30, label.implicitWidth + 18)
+            height: 28
 
-            Behavior on color { ColorAnimation { duration: 250 } }
+            // Active marker: primary fill with a crimson edge
+            Chamfer {
+                anchors.fill: parent
+                cut: 5
+                fillTop: Theme.primary
+                strokeColor: Theme.crimson
+                opacity: tile.focused ? 1 : 0
+
+                Behavior on opacity { NumberAnimation { duration: 180 } }
+            }
 
             BarText {
                 id: label
                 anchors.centerIn: parent
                 text: root.labels[tile.n - 1]
-                color: tile.focused ? Theme.onPrimary : Theme.alpha(Theme.fg, tile.exists ? 0.85 : 0.35)
+                color: tile.focused ? Theme.onPrimary : Theme.alpha(Theme.fg, tile.exists ? 0.9 : 0.4)
             }
 
             MouseArea {

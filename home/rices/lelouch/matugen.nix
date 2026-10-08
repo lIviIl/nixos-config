@@ -62,7 +62,7 @@
   xdg.configFile."matugen/templates/colors-hypr.lua".text = ''
     return {
       active = { "rgba({{ colors.gold.default.hex_stripped }}ff)", "rgba({{ colors.primary.default.hex_stripped }}ff)" },
-      inactive = "rgba({{ colors.outline.default.hex_stripped }}55)",
+      inactive = "rgba({{ colors.outline_variant.default.hex_stripped }}cc)",
     }
   '';
 

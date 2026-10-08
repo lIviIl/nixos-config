@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   programs.quickshell = {
@@ -10,6 +10,9 @@
       target = "hyprland-session.target";
     };
   };
+
+  # notify-send, for testing notifications
+  home.packages = [ pkgs.libnotify ];
 
   # The shell's overlays are opened over IPC
   wayland.windowManager.hyprland.extraConfig = ''
