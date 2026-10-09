@@ -5,7 +5,6 @@
     btop
     fastfetch
     obsidian
-    localsend
     mpv
     imv
   ];
