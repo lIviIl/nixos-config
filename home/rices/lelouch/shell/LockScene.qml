@@ -291,7 +291,7 @@ Item {
                         color: Theme.fg
                         font.family: Theme.serif
                         font.weight: Font.Light
-                        font.pixelSize: Math.round(scene.height * 0.4)
+                        font.pixelSize: Math.round(scene.height * 1.5)
                         font.letterSpacing: Math.round(scene.height * 0.006)
                     }
 
