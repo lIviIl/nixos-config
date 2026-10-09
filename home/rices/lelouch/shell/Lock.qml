@@ -5,12 +5,12 @@ import Quickshell.Wayland
 import Quickshell.Services.Pam
 
 // The lock screen: a Wayland session lock whose surfaces are drawn by LockScene,
-// authenticated through PAM, with the blast-door exit in Doors.
+// authenticated through PAM, with the fade-out in Veil.
 Scope {
     id: root
 
     function lock() {
-        if (lockSession.locked || doors.open)
+        if (lockSession.locked || veil.open)
             return;
         LockState.typedText = "";
         LockState.granted = false;
@@ -31,7 +31,7 @@ Scope {
     function grant() {
         LockState.granted = true;
         LockState.status = "COMMAND ACCEPTED";
-        toDoors.start();
+        toVeil.start();
     }
 
     function handleKey(event) {
@@ -57,13 +57,13 @@ Scope {
         }
     }
 
-    // Success: let the flare build, hand over to the doors overlay (white at that instant),
-    // unlock underneath it, then open the doors.
+    // Success: let the flare build, hand over to the veil overlay (white at that instant),
+    // unlock underneath it, then open the veil.
     Timer {
-        id: toDoors
-        interval: 440
+        id: toVeil
+        interval: 540
         onTriggered: {
-            doors.open = true;
+            veil.open = true;
             toUnlock.start();
         }
     }
@@ -74,7 +74,7 @@ Scope {
         onTriggered: {
             lockSession.locked = false;
             LockState.locked = false;
-            doors.play();
+            veil.play();
         }
     }
 
@@ -109,8 +109,8 @@ Scope {
         }
     }
 
-    Doors {
-        id: doors
+    Veil {
+        id: veil
 
         onFinished: {
             LockState.granted = false;

@@ -8,15 +8,13 @@ import Quickshell.Io
 Item {
     id: scene
 
-    // The doors overlay starts already blazing, without the full-screen white-out
-    property bool holdBlaze: false
 
     readonly property real u: height / 1080
-    readonly property int typed: (LockState.granted || holdBlaze) ? 12 : LockState.typed
+    readonly property int typed: LockState.typed
 
     // Cursor parallax, smoothed
-    property real px: holdBlaze ? 0 : LockState.px
-    property real py: holdBlaze ? 0 : LockState.py
+    property real px: LockState.px
+    property real py: LockState.py
 
     Behavior on px { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     Behavior on py { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
@@ -29,12 +27,8 @@ Item {
     property real blaze: 0           // success flare
     property var strips: []          // glitch slices
 
-    readonly property real whiteOut: holdBlaze ? 0 : Math.max(0, (blaze - 0.6) / 0.4)
+    readonly property real whiteOut: Math.max(0, (blaze - 0.35) / 0.65)
 
-    Component.onCompleted: {
-        if (holdBlaze)
-            blaze = 1;
-    }
 
     // The current wallpaper, as recorded by the `wallpaper` command
     FileView {
@@ -89,7 +83,7 @@ Item {
         target: scene
         property: "blaze"
         to: 1
-        duration: 420
+        duration: 520
         easing.type: Easing.InCubic
     }
 
@@ -101,7 +95,7 @@ Item {
         }
 
         function onGrantedChanged() {
-            if (LockState.granted && !scene.holdBlaze)
+            if (LockState.granted)
                 blazeAnim.restart();
         }
     }
@@ -224,7 +218,7 @@ Item {
                 flare: scene.blaze
                 px: scene.px
                 py: scene.py
-                scale: 1 + 0.12 * scene.blaze
+                scale: 1 + 8 * scene.blaze
 
                 transform: Rotation {
                     origin.x: sigil.width / 2
