@@ -218,8 +218,8 @@ Item {
             Sigil {
                 id: sigil
                 size: Math.min(content.width, content.height) * 0.92
-                x: (content.width - width) / 2 - scene.px * 18 * scene.u
-                y: content.height * 0.58 - height / 2 - scene.py * 18 * scene.u
+                x: (content.width - width) / 2 - scene.px * 30 * scene.u
+                y: content.height * 0.58 - height / 2 - scene.py * 30 * scene.u
                 typed: scene.typed
                 flare: scene.blaze
                 px: scene.px
@@ -291,7 +291,7 @@ Item {
                         color: Theme.fg
                         font.family: Theme.serif
                         font.weight: Font.Light
-                        font.pixelSize: Math.round(scene.height * 0.2)
+                        font.pixelSize: Math.round(scene.height * 0.4)
                         font.letterSpacing: Math.round(scene.height * 0.006)
                     }
 
