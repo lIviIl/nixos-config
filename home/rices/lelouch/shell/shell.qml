@@ -6,4 +6,5 @@ ShellRoot {
     Launcher {}
     WallpaperPicker {}
     Notifications {}
+    Lock {}
 }

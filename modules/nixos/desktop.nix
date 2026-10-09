@@ -16,4 +16,5 @@
   };
 
   security.pam.services.hyprlock = {};
+  security.pam.services.lelouch-lock = {};
 }

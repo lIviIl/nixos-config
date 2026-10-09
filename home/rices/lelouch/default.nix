@@ -7,5 +7,6 @@
     ./kitty.nix
     ./gtk.nix
     ./matugen.nix
+    ./lock.nix
   ];
 }

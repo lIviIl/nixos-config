@@ -10,6 +10,7 @@
     ./gtk.nix
     ./wallpaper-picker.nix
     ./recolor.nix
+    ./lock.nix
     ./wal-templates.nix
   ];
 }
