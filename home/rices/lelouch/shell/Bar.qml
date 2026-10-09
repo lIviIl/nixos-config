@@ -38,9 +38,15 @@ Variants {
             anchors.centerIn: parent
         }
 
+        CenterButton {
+            anchors.right: parent.right
+            anchors.rightMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
         Status {
             anchors.right: parent.right
-            anchors.rightMargin: 20
+            anchors.rightMargin: 58
             anchors.verticalCenter: parent.verticalCenter
         }
     }

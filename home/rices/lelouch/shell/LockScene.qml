@@ -218,7 +218,7 @@ Item {
                 flare: scene.blaze
                 px: scene.px
                 py: scene.py
-                scale: 1 + 12 * scene.blaze
+                scale: 1 + 30 * scene.blaze
 
                 transform: Rotation {
                     origin.x: sigil.width / 2

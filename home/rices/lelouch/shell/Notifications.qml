@@ -65,7 +65,7 @@ Scope {
 
         margins {
             top: 56
-            right: 12
+            right: Ui.centerOpen ? 724 : 12
             bottom: 12
         }
 

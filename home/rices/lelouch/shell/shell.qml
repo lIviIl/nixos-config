@@ -6,5 +6,6 @@ ShellRoot {
     Launcher {}
     WallpaperPicker {}
     Notifications {}
+    CommandCenter {}
     Lock {}
 }
