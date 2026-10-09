@@ -29,10 +29,12 @@
               preserve_split = true,
           },
           input = {
+              kb_layout = "us,ara",
+              kb_options = "grp:alt_shift_toggle",
               touchpad = {
                   natural_scroll       = true,
                   tap_to_click         = true,
-                  disable_while_typing = true,
+                  disable_while_typing = false,
               },
           },
       })
