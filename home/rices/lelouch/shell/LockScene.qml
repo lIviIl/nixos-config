@@ -15,8 +15,8 @@ Item {
     readonly property int typed: (LockState.granted || holdBlaze) ? 12 : LockState.typed
 
     // Cursor parallax, smoothed
-    property real px: LockState.px
-    property real py: LockState.py
+    property real px: holdBlaze ? 0 : LockState.px
+    property real py: holdBlaze ? 0 : LockState.py
 
     Behavior on px { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     Behavior on py { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
@@ -217,9 +217,9 @@ Item {
             // Plane 3: the sigil, with its own layers inside and a slight 3D tilt
             Sigil {
                 id: sigil
-                size: Math.min(content.width, content.height) * 0.66
-                x: (content.width - width) / 2 - scene.px * 30 * scene.u
-                y: content.height * 0.57 - height / 2 - scene.py * 30 * scene.u
+                size: Math.min(content.width, content.height) * 0.92
+                x: (content.width - width) / 2 - scene.px * 18 * scene.u
+                y: content.height * 0.58 - height / 2 - scene.py * 18 * scene.u
                 typed: scene.typed
                 flare: scene.blaze
                 px: scene.px
