@@ -7,5 +7,4 @@ import Quickshell
 Singleton {
     property bool volumeOpen: false
     property bool centerOpen: false
-    property bool centerOpen: false
 }
