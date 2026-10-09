@@ -65,7 +65,5 @@ in
 
     -- The shell's overlays animate themselves, so don't animate layer surfaces twice
     hl.animation({ leaf = "layers", enabled = false, speed = 1, bezier = "md3_decel" })
-    hl.animation({ leaf = "fadeLayersIn",  enabled = false, speed = 1, bezier = "md3_decel" })
-    hl.animation({ leaf = "fadeLayersOut", enabled = false, speed = 1, bezier = "md3_decel" })
   '';
 }
