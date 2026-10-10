@@ -12,7 +12,8 @@ PanelWindow {
 
     // Pages, in tab order. Each later pass adds one here.
     readonly property var pages: [
-        { id: "system", label: "SYSTEM" }
+        { id: "system", label: "SYSTEM" },
+        { id: "controls", label: "CONTROLS" }
     ]
 
     visible: Ui.centerOpen || card.x < drawerWidth
@@ -42,6 +43,12 @@ PanelWindow {
         function toggle(): void {
             Ui.centerOpen = !Ui.centerOpen;
         }
+    }
+
+    Component {
+        id: controlsPage
+
+        ControlsPage {}
     }
 
     Component {
@@ -193,7 +200,7 @@ PanelWindow {
                 Loader {
                     anchors.fill: parent
                     active: Ui.centerOpen || card.x < win.drawerWidth
-                    sourceComponent: win.page === "system" ? systemPage : null
+                    sourceComponent: win.page === "system" ? systemPage : controlsPage
                 }
             }
         }

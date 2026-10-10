@@ -105,11 +105,6 @@ Flickable {
                     }
                 }
             }
-
-            StatRow {
-                label: "CORE TEMPS"
-                value: SysInfo.cpuCoreTemps.map(t => Math.round(t.temp) + "°").join("  ")
-            }
         }
 
         // ---------------- MEMORY ----------------
@@ -173,26 +168,6 @@ Flickable {
                 label: "SWAP"
                 value: SysInfo.mem.swapTotal > 0 ? Fmt.bytes(SysInfo.mem.swapUsed) + " / " + Fmt.bytes(SysInfo.mem.swapTotal) : "none"
             }
-
-            Text {
-                text: "TOP CONSUMERS"
-                color: Theme.gold
-                font.family: Theme.mono
-                font.pixelSize: 11
-                font.bold: true
-                font.letterSpacing: 3
-            }
-
-            Repeater {
-                model: SysInfo.memTop
-
-                StatRow {
-                    required property var modelData
-
-                    label: modelData.name
-                    value: Fmt.bytes(modelData.bytes)
-                }
-            }
         }
 
         // ---------------- GPU ----------------
@@ -227,18 +202,6 @@ Flickable {
                 visible: SysInfo.gpuAvailable
                 label: "CLOCK"
                 value: Fmt.mhz(SysInfo.gpuFreq) + " / " + Fmt.mhz(SysInfo.gpuMaxFreq)
-            }
-
-            StatRow {
-                visible: SysInfo.gpuAvailable
-                label: "TEMPERATURE"
-                value: Math.round(SysInfo.cpuTemp) + "°C  (shared die)"
-            }
-
-            StatRow {
-                visible: SysInfo.gpuAvailable
-                label: "VRAM"
-                value: "shared with system RAM"
             }
         }
 
@@ -303,14 +266,14 @@ Flickable {
                 StatRow {
                     required property var modelData
 
-                    label: modelData.iface
+                    label: "LOCAL IP"
                     value: modelData.addr
                 }
             }
 
             StatRow {
-                label: "GATEWAY"
-                value: SysInfo.gateway !== "" ? SysInfo.gateway + (SysInfo.pingMs >= 0 ? "   " + SysInfo.pingMs.toFixed(1) + " ms" : "   --") : "none"
+                label: "LATENCY"
+                value: SysInfo.pingMs >= 0 ? SysInfo.pingMs.toFixed(1) + " ms" : "--"
             }
 
             StatRow {

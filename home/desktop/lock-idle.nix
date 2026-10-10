@@ -1,16 +1,10 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 
 let
   # Absolute path: the idle daemon doesn't have your login PATH
   lockScreen = "${config.home.path}/bin/lock-screen";
 in
 {
-  home.packages = with pkgs; [
-    grim
-    slurp
-    wl-clipboard
-  ];
-
   # Kept as the emergency fallback
   programs.hyprlock.enable = true;
 
@@ -37,6 +31,5 @@ in
   wayland.windowManager.hyprland.extraConfig = ''
     hl.bind("SUPER + L", hl.dsp.exec_cmd("lock-screen"))
     hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("hyprlock"))
-    hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))
   '';
 }

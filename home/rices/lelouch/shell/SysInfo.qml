@@ -15,12 +15,10 @@ Singleton {
     property var cpuCores: []
     property var cpuFreq: []
     property real cpuTemp: 0
-    property var cpuCoreTemps: []
     property var cpuHistory: []
 
     // Memory
     property var mem: ({ total: 0, used: 0, buffers: 0, cached: 0, free: 0, active: 0, swapTotal: 0, swapUsed: 0 })
-    property var memTop: []
     property var memHistory: []
 
     // GPU
@@ -118,21 +116,17 @@ Singleton {
         cpuHistory = push(cpuHistory, total);
 
         let pkg = 0;
-        const coreTemps = [];
         for (let i = 0; i < tempLines.length; i++) {
             const at = tempLines[i].lastIndexOf("=");
             const label = tempLines[i].slice(0, at);
             const temp = Number(tempLines[i].slice(at + 1)) / 1000;
             if (label.startsWith("Package"))
                 pkg = temp;
-            else
-                coreTemps.push({ label: label, temp: temp });
         }
         cpuTemp = pkg;
-        cpuCoreTemps = coreTemps;
     }
 
-    function updateMem(memLines, topLines) {
+    function updateMem(memLines) {
         const m = {};
         for (let i = 0; i < memLines.length; i++) {
             const colon = memLines[i].indexOf(":");
@@ -155,11 +149,6 @@ Singleton {
         };
         memHistory = push(memHistory, total > 0 ? 100 * active / total : 0);
 
-        memTop = topLines.map(l => {
-            const t = l.trim();
-            const sp = t.indexOf(" ");
-            return { name: t.slice(sp + 1), bytes: Number(t.slice(0, sp)) * 1024 };
-        });
     }
 
     function updateGpu(lines, dt) {
@@ -257,7 +246,7 @@ Singleton {
 
         const s = parse(text);
         updateCpu(s.stat || [], s.freq || [], s.temp || []);
-        updateMem(s.mem || [], s.top || []);
+        updateMem(s.mem || []);
         updateGpu(s.gpu || [], dt);
         updateStorage(s.df || [], s.io || [], dt);
         updateNet(s.net || [], s.ip || [], s.gw || [], dt);

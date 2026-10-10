@@ -25,8 +25,6 @@ done
 echo "@mem"
 grep -E '^(MemTotal|MemFree|MemAvailable|Buffers|Cached|SReclaimable|Shmem|SwapTotal|SwapFree):' /proc/meminfo
 
-echo "@top"
-ps -eo rss=,comm= | awk '{a[$2] += $1} END {for (k in a) print a[k], k}' | sort -rn | head -n 5
 
 echo "@gpu"
 for card in /sys/class/drm/card[0-9]; do
