@@ -4,8 +4,18 @@
   home.packages = with pkgs; [
     btop
     fastfetch
-    obsidian
     mpv
     imv
   ];
+
+programs.obsidian = {
+    enable = true;
+
+    vaults.notes.target = "Documents/Obsidian";
+
+    defaultSettings.app = {
+      alwaysUpdateLinks = true;
+      spellcheck = true;
+    };
+  };
 }
