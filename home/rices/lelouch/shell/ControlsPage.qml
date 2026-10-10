@@ -14,7 +14,11 @@ Flickable {
     // ---------------- Audio ----------------
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property var source: Pipewire.defaultAudioSource
-    readonly property var streams: Pipewire.nodes.values.filter(n => n.isStream && !n.isSink && n.audio)
+
+    // Application playback streams: PipeWire's own stream type when it reports one,
+    // otherwise Quickshell's direction flag (playback streams count as sinks there)
+    readonly property var streams: Pipewire.nodes.values.filter(n => n.isStream && n.audio && ((n.properties && n.properties["media.class"]) ? n.properties["media.class"] === "Stream/Output/Audio" : n.isSink))
+
     readonly property var denoised: Pipewire.nodes.values.filter(n => n.name === "rnnoise_source")[0] ?? null
     readonly property var microphone: Pipewire.nodes.values.filter(n => !n.isStream && !n.isSink && n.audio && n.name !== "rnnoise_source")[0] ?? null
     readonly property var mic: microphone ?? source
@@ -32,7 +36,7 @@ Flickable {
         Quickshell.execDetached(["wpctl", "set-mute", String(id), "toggle"]);
     }
 
-    // Close the drawer first so it isn't in the capture, then run the command
+    // Close the drawer first, then run the command
     function run(args) {
         Ui.centerOpen = false;
         Quickshell.execDetached(["sh", "-c", "sleep 0.5; exec \"$@\"", "sh"].concat(args));
@@ -87,17 +91,6 @@ Flickable {
         Quickshell.execDetached(["powerprofilesctl", "set", name]);
     }
 
-    // ---------------- Recording state ----------------
-    property bool recording: false
-
-    Process {
-        id: recCheck
-        command: ["sh", "-c", "pgrep -x wf-recorder > /dev/null && echo yes || echo no"]
-        stdout: StdioCollector {
-            onStreamFinished: page.recording = this.text.trim() === "yes"
-        }
-    }
-
     Component.onCompleted: profList.running = true
 
     Timer {
@@ -110,8 +103,6 @@ Flickable {
                 brightRead.running = true;
             if (!profGet.running)
                 profGet.running = true;
-            if (!recCheck.running)
-                recCheck.running = true;
         }
     }
 
@@ -123,6 +114,7 @@ Flickable {
         // ---------------- AUDIO OUTPUT ----------------
         SectionCard {
             width: parent.width
+            icon: "speaker"
             title: "AUDIO OUTPUT"
             subtitle: page.sink && page.sink.audio ? (page.sink.audio.muted ? "MUTED" : Math.round(page.sink.audio.volume * 100) + "%") : "--"
 
@@ -142,6 +134,7 @@ Flickable {
                 ActionButton {
                     id: muteOutput
                     anchors.right: parent.right
+                    width: 92
                     label: page.sink && page.sink.audio && page.sink.audio.muted ? "UNMUTE" : "MUTE"
                     active: page.sink && page.sink.audio && page.sink.audio.muted
                     onClicked: page.toggleMute(page.sink.id)
@@ -152,6 +145,7 @@ Flickable {
         // ---------------- APPLICATIONS ----------------
         SectionCard {
             width: parent.width
+            icon: "apps"
             title: "APPLICATIONS"
             subtitle: page.streams.length + " playing"
 
@@ -223,6 +217,7 @@ Flickable {
         // ---------------- MICROPHONE ----------------
         SectionCard {
             width: parent.width
+            icon: page.mic && page.mic.audio && page.mic.audio.muted ? "micOff" : "mic"
             title: "MICROPHONE"
             subtitle: page.mic && page.mic.audio ? (page.mic.audio.muted ? "MUTED" : "LIVE") : "none"
 
@@ -242,6 +237,7 @@ Flickable {
                 ActionButton {
                     id: muteMic
                     anchors.right: parent.right
+                    width: 92
                     label: page.mic && page.mic.audio && page.mic.audio.muted ? "UNMUTE" : "MUTE"
                     active: page.mic && page.mic.audio && page.mic.audio.muted
                     danger: page.mic && page.mic.audio && page.mic.audio.muted
@@ -249,25 +245,20 @@ Flickable {
                 }
             }
 
-            ActionButton {
-                label: page.denoiseOn ? "NOISE SUPPRESSION  ON" : "NOISE SUPPRESSION  OFF"
-                active: page.denoiseOn
+            ToggleRow {
+                icon: "mic"
+                label: "Noise suppression"
+                hint: page.denoised === null ? "Virtual microphone not found" : "RNNoise virtual microphone"
+                checked: page.denoiseOn
                 enabled: page.denoised !== null && page.microphone !== null
-                onClicked: Pipewire.preferredDefaultAudioSource = page.denoiseOn ? page.microphone : page.denoised
-            }
-
-            Text {
-                visible: page.denoised === null
-                text: "The RNNoise virtual microphone was not found"
-                color: Theme.alpha(Theme.fg, 0.6)
-                font.family: Theme.mono
-                font.pixelSize: 11
+                onToggled: Pipewire.preferredDefaultAudioSource = page.denoiseOn ? page.microphone : page.denoised
             }
         }
 
         // ---------------- DISPLAY ----------------
         SectionCard {
             width: parent.width
+            icon: "sun"
             title: "DISPLAY"
             subtitle: Math.round(page.brightness * 100) + "%"
 
@@ -282,6 +273,7 @@ Flickable {
         // ---------------- POWER ----------------
         SectionCard {
             width: parent.width
+            icon: "bolt"
             title: "POWER"
             subtitle: page.profile.replace("-", " ").toUpperCase()
 
@@ -290,7 +282,8 @@ Flickable {
                 spacing: 8
 
                 ActionButton {
-                    width: (parent.width - 16) / 3
+                    width: Math.floor((parent.width - 16) / 3)
+                    icon: "bolt"
                     label: "PERFORMANCE"
                     active: page.profile === "performance"
                     enabled: page.profiles.indexOf("performance") >= 0
@@ -298,7 +291,8 @@ Flickable {
                 }
 
                 ActionButton {
-                    width: (parent.width - 16) / 3
+                    width: Math.floor((parent.width - 16) / 3)
+                    icon: "balance"
                     label: "BALANCED"
                     active: page.profile === "balanced"
                     enabled: page.profiles.indexOf("balanced") >= 0
@@ -306,7 +300,8 @@ Flickable {
                 }
 
                 ActionButton {
-                    width: (parent.width - 16) / 3
+                    width: Math.floor((parent.width - 16) / 3)
+                    icon: "leaf"
                     label: "POWER SAVER"
                     active: page.profile === "power-saver"
                     enabled: page.profiles.indexOf("power-saver") >= 0
@@ -314,70 +309,37 @@ Flickable {
                 }
             }
 
-            ActionButton {
-                label: Ui.idleInhibit ? "IDLE INHIBITOR  ON" : "IDLE INHIBITOR  OFF"
-                active: Ui.idleInhibit
-                onClicked: Ui.idleInhibit = !Ui.idleInhibit
-            }
-
-            Text {
-                visible: Ui.idleInhibit
-                text: "Screen lock, blanking and idle suspend are blocked"
-                color: Theme.gold
-                font.family: Theme.mono
-                font.pixelSize: 11
-            }
-        }
-
-        // ---------------- CAPTURE ----------------
-        SectionCard {
-            width: parent.width
-            title: "CAPTURE"
-            subtitle: page.recording ? "RECORDING" : ""
-
-            Flow {
-                width: parent.width
-                spacing: 8
-
-                ActionButton {
-                    label: "SCREENSHOT"
-                    onClicked: page.run(["lelouch-capture", "full"])
-                }
-
-                ActionButton {
-                    label: "REGION"
-                    onClicked: page.run(["lelouch-capture", "region"])
-                }
-
-                ActionButton {
-                    label: page.recording ? "STOP RECORDING" : "RECORD"
-                    active: page.recording
-                    danger: page.recording
-                    onClicked: page.run(["lelouch-capture", "record"])
-                }
-
-                ActionButton {
-                    label: "OCR TEXT"
-                    onClicked: page.run(["lelouch-capture", "ocr"])
-                }
+            ToggleRow {
+                icon: "eye"
+                label: "Idle inhibitor"
+                hint: "Block screen lock, blanking and idle suspend"
+                checked: Ui.idleInhibit
+                onToggled: Ui.idleInhibit = !Ui.idleInhibit
             }
         }
 
         // ---------------- SESSION ----------------
         SectionCard {
             width: parent.width
+            icon: "power"
             title: "SESSION"
 
-            Flow {
+            Row {
                 width: parent.width
                 spacing: 8
 
                 ActionButton {
+                    width: Math.floor((parent.width - 32) / 5)
+                    vertical: true
+                    icon: "lock"
                     label: "LOCK"
                     onClicked: page.run(["lock-screen"])
                 }
 
                 ActionButton {
+                    width: Math.floor((parent.width - 32) / 5)
+                    vertical: true
+                    icon: "moon"
                     label: "SUSPEND"
                     onClicked: {
                         Ui.centerOpen = false;
@@ -386,6 +348,9 @@ Flickable {
                 }
 
                 ActionButton {
+                    width: Math.floor((parent.width - 32) / 5)
+                    vertical: true
+                    icon: "logout"
                     label: "LOG OUT"
                     danger: true
                     needsConfirm: true
@@ -393,6 +358,9 @@ Flickable {
                 }
 
                 ActionButton {
+                    width: Math.floor((parent.width - 32) / 5)
+                    vertical: true
+                    icon: "reboot"
                     label: "REBOOT"
                     danger: true
                     needsConfirm: true
@@ -400,6 +368,9 @@ Flickable {
                 }
 
                 ActionButton {
+                    width: Math.floor((parent.width - 32) / 5)
+                    vertical: true
+                    icon: "power"
                     label: "SHUTDOWN"
                     danger: true
                     needsConfirm: true

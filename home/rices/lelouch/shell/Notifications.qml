@@ -51,8 +51,21 @@ Scope {
         }
     }
 
-    // Full height and never resized; only the toasts themselves are clickable
+    // Full height and never resized; only the toasts themselves are clickable.
+    // It is wide enough for both toast positions, so stepping aside is an animation inside the window.
     PanelWindow {
+        id: toastWindow
+
+        // How far the toasts step aside while the command center is open (its width plus the gap)
+        property real shift: Ui.centerOpen ? 712 : 0
+
+        Behavior on shift {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
+
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region { item: hitbox }
@@ -65,16 +78,16 @@ Scope {
 
         margins {
             top: 56
-            right: Ui.centerOpen ? 724 : 12
+            right: 12
             bottom: 12
         }
 
-        // Extra room on the left so the rebound isn't clipped
-        implicitWidth: 380 + 48
+        implicitWidth: 380 + 48 + 712
 
         Item {
             id: hitbox
             anchors.right: parent.right
+            anchors.rightMargin: toastWindow.shift
             width: 380
             height: view.contentHeight
         }
@@ -83,6 +96,7 @@ Scope {
             id: view
             anchors.top: parent.top
             anchors.right: parent.right
+            anchors.rightMargin: toastWindow.shift
             anchors.bottom: parent.bottom
             width: 380
             spacing: 8

@@ -1,20 +1,25 @@
 import QtQuick
 
-// A chamfered button. active fills it; danger edges it in crimson;
+// A chamfered button, optionally with an icon (beside the label, or above it when vertical).
+// active fills it; danger edges it in crimson;
 // needsConfirm makes the first click arm it ("CONFIRM") and the second one fire.
 Item {
     id: button
 
     property string label: ""
+    property string icon: ""
+    property bool vertical: false
     property bool active: false
     property bool danger: false
     property bool needsConfirm: false
     property bool armed: false
 
+    readonly property color ink: active ? Theme.onPrimary : (danger ? Theme.crimson : Theme.fg)
+
     signal clicked()
 
-    implicitWidth: caption.implicitWidth + 28
-    implicitHeight: 32
+    implicitWidth: Math.ceil(content.implicitWidth) + 28
+    implicitHeight: vertical ? 60 : 34
     opacity: enabled ? 1 : 0.4
 
     Chamfer {
@@ -24,15 +29,28 @@ Item {
         fillTop: button.active ? Theme.primary : (area.containsMouse ? Theme.alpha(Theme.fg, 0.08) : "transparent")
     }
 
-    Text {
-        id: caption
+    Grid {
+        id: content
         anchors.centerIn: parent
-        text: button.armed ? "CONFIRM" : button.label
-        color: button.active ? Theme.onPrimary : (button.danger ? Theme.crimson : Theme.fg)
-        font.family: Theme.mono
-        font.pixelSize: 12
-        font.bold: true
-        font.letterSpacing: 2
+        columns: button.vertical ? 1 : 2
+        spacing: button.vertical ? 6 : 9
+        horizontalItemAlignment: Grid.AlignHCenter
+        verticalItemAlignment: Grid.AlignVCenter
+
+        Glyph {
+            visible: button.icon !== ""
+            kind: button.icon
+            tint: button.ink
+        }
+
+        Text {
+            text: button.armed ? "CONFIRM" : button.label
+            color: button.ink
+            font.family: Theme.mono
+            font.pixelSize: 12
+            font.bold: true
+            font.letterSpacing: 2
+        }
     }
 
     Timer {

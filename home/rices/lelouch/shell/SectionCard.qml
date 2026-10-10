@@ -1,11 +1,12 @@
 import QtQuick
 
-// A titled, chamfered section. Children are stacked inside it.
+// A titled, chamfered section with an optional icon. Children are stacked inside it.
 Item {
     id: card
 
     property string title: ""
     property string subtitle: ""
+    property string icon: ""
     default property alias content: body.data
 
     implicitHeight: 48 + body.implicitHeight + 16
@@ -17,8 +18,16 @@ Item {
         fillTop: Theme.alpha(Theme.bg, 0.55)
     }
 
-    Text {
+    Glyph {
+        visible: card.icon !== ""
+        kind: card.icon
+        tint: Theme.gold
         x: 16
+        y: 12
+    }
+
+    Text {
+        x: card.icon !== "" ? 42 : 16
         y: 12
         text: card.title
         color: Theme.gold
