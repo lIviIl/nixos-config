@@ -214,12 +214,12 @@ Item {
                 scale: sigil.scale
             }
 
-            // The emblem: scale origin dynamically shifts to screen center during blaze
+            // The emblem shifts dynamically UPWARD during expansion so the eye hits dead-center
             Sigil {
                 id: sigil
                 size: Math.min(content.width, content.height) * 0.92
                 x: (content.width - width) / 2 - scene.px * 8 * scene.u
-                y: content.height * 0.58 - height / 2 - scene.py * 8 * scene.u
+                y: (content.height * 0.58 - height / 2 - scene.py * 8 * scene.u) - (height * 0.32 * scene.blaze)
                 typed: scene.typed
                 flare: scene.blaze
                 px: scene.px
