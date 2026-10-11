@@ -31,7 +31,6 @@ Item {
             columns: 2
             columnSpacing: 12
             rowSpacing: 12
-            uniformCellSizes: true
 
             // ---------------- CPU ----------------
             SectionCard {
