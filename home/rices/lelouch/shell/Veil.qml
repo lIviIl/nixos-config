@@ -2,8 +2,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// Success hand-off: this overlay takes over from the lock surface while the screen is white,
-// the session unlocks underneath it, and the white fades out into the desktop.
+// Success hand-off: this overlay takes over from the lock surface while the screen is red,
+// the session unlocks underneath it, and the red fades out into the desktop.
 PanelWindow {
     id: veil
 
@@ -40,7 +40,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: "white"
+        color: Theme.crimson
         opacity: veil.fade
     }
 

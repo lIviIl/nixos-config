@@ -11,23 +11,22 @@ Item {
     readonly property real u: height / 1080
     readonly property int typed: LockState.typed
 
-    // Cursor parallax, smoothed (kept deliberately small)
+    // Cursor parallax, smoothed
     property real px: LockState.px
     property real py: LockState.py
 
     Behavior on px { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     Behavior on py { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
 
-    // Driven by events
     property real shakeX: 0
     property real shakeY: 0
-    property real ab: 0              // chromatic aberration amount
+    property real ab: 0
     property real failFlash: 0
-    property real blaze: 0           // success: zoom, red fill, flare
-    property var strips: []          // glitch slices
+    property real blaze: 0
+    property var strips: []
 
-    // Smoothly fill the screen with crimson as the sigil expands, completely eliminating the white flash
-    readonly property real redFill: Math.max(0, Math.min(1, (blaze - 0.15) / 0.55))
+    // Smooth red fill matching the Geass surge
+    readonly property real redFill: Math.max(0, Math.min(1, (blaze - 0.1) / 0.6))
 
     HoverHandler {
         onPointChanged: {
@@ -36,7 +35,6 @@ Item {
         }
     }
 
-    // The current wallpaper, as recorded by the `wallpaper` command
     FileView {
         id: wallFile
         path: Quickshell.env("HOME") + "/.cache/current-wallpaper"
@@ -54,7 +52,6 @@ Item {
         }
     }
 
-    // ---- Rejection: elastic shake, chromatic split, harsh flicker ----
     ParallelAnimation {
         id: rejectAnim
 
@@ -83,7 +80,6 @@ Item {
         }
     }
 
-    // ---- Success: the emblem rushes at the screen ----
     NumberAnimation {
         id: blazeAnim
         target: scene
@@ -106,7 +102,6 @@ Item {
         }
     }
 
-    // New random glitch slices every few frames while the aberration is active
     Timer {
         interval: 45
         repeat: true
@@ -155,7 +150,6 @@ Item {
                 fillMode: Image.PreserveAspectCrop
             }
 
-            // Plane 1, farthest: heavily blurred and dark; moves least
             MultiEffect {
                 visible: art.status === Image.Ready
                 source: art
@@ -169,7 +163,6 @@ Item {
                 brightness: -0.5
             }
 
-            // Plane 2: the art itself, dimmed
             MultiEffect {
                 visible: art.status === Image.Ready
                 source: art
@@ -181,13 +174,11 @@ Item {
                 opacity: 0.78
             }
 
-            // Palette tint
             Rectangle {
                 anchors.fill: parent
                 color: Theme.alpha(Theme.bg, 0.3)
             }
 
-            // Vignette
             Shape {
                 anchors.fill: parent
 
@@ -214,7 +205,6 @@ Item {
                 }
             }
 
-            // The circle behind the emblem, turning slowly
             Dial {
                 id: dial
                 size: sigil.size
@@ -224,17 +214,17 @@ Item {
                 scale: sigil.scale
             }
 
-            // The emblem, transitioning to exact screen center during blaze so the core eye engulfs the view
+            // The emblem: scale origin dynamically shifts to screen center during blaze
             Sigil {
                 id: sigil
                 size: Math.min(content.width, content.height) * 0.92
                 x: (content.width - width) / 2 - scene.px * 8 * scene.u
-                y: ((content.height * 0.58 - height / 2) * (1 - scene.blaze)) + ((content.height / 2 - height / 2) * scene.blaze) - scene.py * 8 * scene.u
+                y: content.height * 0.58 - height / 2 - scene.py * 8 * scene.u
                 typed: scene.typed
                 flare: scene.blaze
                 px: scene.px
                 py: scene.py
-                scale: 1 + 12 * scene.blaze
+                scale: 1 + 28 * scene.blaze
                 transformOrigin: Item.Center
 
                 transform: Rotation {
@@ -247,7 +237,6 @@ Item {
                 }
             }
 
-            // Status line under the emblem
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.horizontalCenterOffset: -scene.px * 8 * scene.u
@@ -260,7 +249,6 @@ Item {
                 font.letterSpacing: 7
             }
 
-            // The time, nearest to you
             Item {
                 id: clockPlane
                 width: content.width
@@ -306,7 +294,6 @@ Item {
                         font.letterSpacing: Math.round(scene.height * 0.006)
                     }
 
-                    // Seconds, like the last digits of a countdown
                     Text {
                         id: secs
                         x: hhmm.width + 18
@@ -330,7 +317,6 @@ Item {
                 }
             }
 
-            // ---- Corners: media, session switcher, power ----
             LockMedia {
                 x: 40
                 y: content.height - height - 36
@@ -374,7 +360,6 @@ Item {
             }
         }
 
-        // Chromatic aberration: tinted copies of everything, split apart
         MultiEffect {
             visible: scene.ab > 0
             source: content
@@ -397,7 +382,6 @@ Item {
             colorizationColor: "#00e0ff"
         }
 
-        // Glitch: horizontal slices of the screen thrown sideways
         Repeater {
             model: scene.strips
 
@@ -414,14 +398,12 @@ Item {
         }
     }
 
-    // Harsh flicker on rejection
     Rectangle {
         anchors.fill: parent
         color: Theme.crimson
         opacity: scene.failFlash
     }
 
-    // Success: smooth crimson engulfment masking the expansion
     Rectangle {
         anchors.fill: parent
         color: Theme.crimson
