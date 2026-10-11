@@ -6,7 +6,7 @@ Item {
     id: banner
 
     Layout.fillWidth: true
-    Layout.preferredHeight: 84
+    Layout.preferredHeight: 92
 
     Chamfer {
         anchors.fill: parent
@@ -22,8 +22,8 @@ Item {
         spacing: 16
 
         Item {
-            Layout.preferredWidth: 56
-            Layout.preferredHeight: 56
+            Layout.preferredWidth: 64
+            Layout.preferredHeight: 64
 
             Chamfer {
                 anchors.fill: parent
@@ -39,6 +39,10 @@ Item {
                 source: "file://" + Identity.home + "/.face"
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
+                smooth: true
+                mipmap: true
+                sourceSize.width: 256
+                sourceSize.height: 256
                 visible: status === Image.Ready
             }
 

@@ -7,6 +7,8 @@ import Quickshell.Bluetooth
 Item {
     id: page
 
+    implicitHeight: layout.implicitHeight
+
     // ---------------- Wi-Fi ----------------
     property var networks: []
     property var knownNames: []
@@ -123,30 +125,8 @@ Item {
         return list;
     }
 
-    // As many devices as fit in the space (a connected one is taller: it shows its audio profiles)
-    function fitDevices(list, h) {
-        const out = [];
-        let used = 0;
-        for (let i = 0; i < list.length; i++) {
-            const need = list[i].connected ? 124 : 52;
-            if (used + need > h && out.length > 0)
-                break;
-            out.push(list[i]);
-            used += need;
-        }
-        return out;
-    }
-
     // Audio profiles of connected Bluetooth devices, from pactl
     property var btCards: ({})
-
-    function profileLabel(name) {
-        if (name.indexOf("a2dp") === 0)
-            return "A2DP";
-        if (name.indexOf("headset") === 0)
-            return "HANDS-FREE";
-        return name.toUpperCase();
-    }
 
     Process {
         id: cardProc
@@ -203,13 +183,12 @@ Item {
     }
 
     ColumnLayout {
+        id: layout
         anchors.fill: parent
         spacing: 12
 
         // ---------------- NETWORK ----------------
         SectionCard {
-            Layout.fillHeight: true
-            Layout.preferredHeight: 100
             icon: "wifi"
             title: "NETWORK"
             subtitle: !Net.radioOn ? "off" : (Net.connected ? Net.ssid : "not connected")
@@ -235,166 +214,49 @@ Item {
                 wrapMode: Text.Wrap
             }
 
-            // As many networks as fit
-            Item {
-                id: netList
+            Text {
+                visible: Net.radioOn && page.networks.length === 0
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
+                text: "No networks found"
+                color: Theme.alpha(Theme.fg, 0.7)
+                font.family: Theme.mono
+                font.pixelSize: 12
+            }
 
-                readonly property int capacity: Math.max(1, Math.floor(height / 40))
+            // About six networks fit; the rest scroll
+            Scroller {
+                visible: Net.radioOn && page.networks.length > 0
+                maxHeight: 250
 
-                Text {
-                    visible: Net.radioOn && page.networks.length === 0
-                    text: "No networks found"
-                    color: Theme.alpha(Theme.fg, 0.7)
-                    font.family: Theme.mono
-                    font.pixelSize: 12
-                }
+                Repeater {
+                    model: Net.radioOn ? page.networks : []
 
-                Column {
-                    width: parent.width
-                    spacing: 4
+                    WifiRow {
+                        required property var modelData
 
-                    Repeater {
-                        model: Net.radioOn ? page.networks.slice(0, netList.capacity) : []
+                        width: parent.width
+                        network: modelData
+                        known: page.knownNames.indexOf(modelData.ssid) >= 0
+                        asking: page.asking === modelData.ssid
 
-                        Column {
-                            id: net
-
-                            required property var modelData
-
-                            readonly property bool known: page.knownNames.indexOf(modelData.ssid) >= 0
-
-                            width: parent.width
-                            spacing: 4
-
-                            Item {
-                                width: parent.width
-                                height: 36
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    color: hover.containsMouse ? Theme.alpha(Theme.fg, 0.07) : (net.modelData.inUse ? Theme.alpha(Theme.primary, 0.2) : "transparent")
-                                }
-
-                                Glyph {
-                                    kind: "wifi"
-                                    level: net.modelData.signal
-                                    tint: net.modelData.inUse ? Theme.gold : Theme.fg
-                                    x: 8
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                Text {
-                                    x: 36
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: parent.width - 36 - 130
-                                    elide: Text.ElideRight
-                                    text: net.modelData.ssid
-                                    color: Theme.fg
-                                    font.family: Theme.mono
-                                    font.pixelSize: 13
-                                    font.bold: true
-                                }
-
-                                Glyph {
-                                    visible: net.modelData.secured
-                                    kind: "lock"
-                                    tint: Theme.alpha(Theme.fg, 0.7)
-                                    anchors.right: tag.left
-                                    anchors.rightMargin: 8
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                Text {
-                                    id: tag
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 86
-                                    horizontalAlignment: Text.AlignRight
-                                    text: net.modelData.inUse ? "CONNECTED" : (net.known ? "SAVED" : (net.modelData.secured ? "" : "OPEN"))
-                                    color: Theme.gold
-                                    font.family: Theme.mono
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
-
-                                MouseArea {
-                                    id: hover
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-
-                                    onClicked: {
-                                        if (net.modelData.inUse) {
-                                            page.wifiMessage = "";
-                                            Quickshell.execDetached(["nmcli", "connection", "down", "id", net.modelData.ssid]);
-                                            afterAction.restart();
-                                        } else if (net.known || !net.modelData.secured) {
-                                            page.wifiConnect(net.modelData.ssid, "");
-                                        } else {
-                                            page.asking = net.modelData.ssid;
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Password prompt for a new protected network
-                            Item {
-                                visible: page.asking === net.modelData.ssid
-                                width: parent.width
-                                height: 34
-
-                                Chamfer {
-                                    anchors.fill: parent
-                                    cut: 5
-                                    strokeColor: Theme.alpha(Theme.gold, 0.8)
-                                    fillTop: "transparent"
-                                }
-
-                                TextInput {
-                                    id: password
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 12
-                                    anchors.rightMargin: 12
-                                    verticalAlignment: TextInput.AlignVCenter
-                                    echoMode: TextInput.Password
-                                    color: Theme.fg
-                                    selectionColor: Theme.primary
-                                    selectedTextColor: Theme.onPrimary
-                                    font.family: Theme.mono
-                                    font.pixelSize: 13
-                                    clip: true
-
-                                    onVisibleChanged: {
-                                        if (visible) {
-                                            text = "";
-                                            forceActiveFocus();
-                                        }
-                                    }
-
-                                    onAccepted: {
-                                        page.wifiConnect(net.modelData.ssid, text);
-                                        page.asking = "";
-                                    }
-
-                                    Keys.onEscapePressed: page.asking = ""
-                                }
-
-                                Text {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: 12
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: password.text === ""
-                                    text: "Password, then Enter"
-                                    color: Theme.alpha(Theme.fg, 0.5)
-                                    font.family: Theme.mono
-                                    font.pixelSize: 13
-                                }
+                        onActivated: {
+                            if (modelData.inUse) {
+                                page.wifiMessage = "";
+                                Quickshell.execDetached(["nmcli", "connection", "down", "id", modelData.ssid]);
+                                afterAction.restart();
+                            } else if (known || !modelData.secured) {
+                                page.wifiConnect(modelData.ssid, "");
+                            } else {
+                                page.asking = modelData.ssid;
                             }
                         }
+
+                        onPasswordEntered: password => {
+                            page.wifiConnect(modelData.ssid, password);
+                            page.asking = "";
+                        }
+
+                        onCancelled: page.asking = ""
                     }
                 }
             }
@@ -418,20 +280,17 @@ Item {
                 }
 
                 Text {
-                    visible: Net.radioOn && page.networks.length > netList.capacity
-                    text: "+" + (page.networks.length - netList.capacity) + " more"
-                    color: Theme.gold
+                    visible: Net.radioOn && page.networks.length > 0
+                    text: page.networks.length + " networks"
+                    color: Theme.alpha(Theme.fg, 0.65)
                     font.family: Theme.mono
                     font.pixelSize: 11
-                    font.bold: true
                 }
             }
         }
 
         // ---------------- BLUETOOTH ----------------
         SectionCard {
-            Layout.fillHeight: true
-            Layout.preferredHeight: 120
             icon: "bluetooth"
             title: "BLUETOOTH"
             subtitle: !page.adapter ? "" : (page.adapter.enabled ? page.btDevices.filter(d => d.connected).length + " connected" : "off")
@@ -464,165 +323,28 @@ Item {
                 onToggled: page.adapter.discovering = !page.adapter.discovering
             }
 
-            Item {
-                id: btList
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
+            // Two or three devices fit; the rest scroll
+            Scroller {
+                visible: page.btDevices.length > 0
+                maxHeight: 250
 
-                readonly property var shown: page.fitDevices(page.btDevices, height)
+                Repeater {
+                    model: page.btDevices
 
-                Column {
-                    width: parent.width
-                    spacing: 6
+                    DeviceRow {
+                        id: devRow
 
-                    Repeater {
-                        model: btList.shown
+                        required property var modelData
 
-                        Column {
-                            id: dev
+                        readonly property string cardName: "bluez_card." + modelData.address.replace(/:/g, "_")
 
-                            required property var modelData
+                        width: parent.width
+                        device: modelData
+                        card: page.btCards[cardName] ?? null
 
-                            readonly property var d: modelData
-                            readonly property string cardName: "bluez_card." + d.address.replace(/:/g, "_")
-                            readonly property var card: page.btCards[cardName] ?? null
-
-                            // One button per distinct profile label
-                            readonly property var profileButtons: {
-                                const out = [];
-                                const seen = {};
-                                if (dev.card) {
-                                    for (let i = 0; i < dev.card.profiles.length; i++) {
-                                        const label = page.profileLabel(dev.card.profiles[i].name);
-                                        if (!seen[label]) {
-                                            seen[label] = true;
-                                            out.push({ name: dev.card.profiles[i].name, label: label });
-                                        }
-                                    }
-                                }
-                                return out;
-                            }
-
-                            width: parent.width
-                            spacing: 6
-
-                            Item {
-                                width: parent.width
-                                height: 44
-
-                                Glyph {
-                                    id: devIcon
-                                    kind: dev.d.icon.indexOf("headset") >= 0 || dev.d.icon.indexOf("headphone") >= 0 ? "headphones" : "bluetooth"
-                                    tint: dev.d.connected ? Theme.gold : Theme.alpha(Theme.fg, 0.8)
-                                    x: 4
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                Column {
-                                    anchors.left: devIcon.right
-                                    anchors.leftMargin: 12
-                                    anchors.right: devButton.left
-                                    anchors.rightMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: 3
-
-                                    Text {
-                                        width: parent.width
-                                        text: dev.d.name
-                                        color: Theme.fg
-                                        font.family: Theme.mono
-                                        font.pixelSize: 13
-                                        font.bold: true
-                                        elide: Text.ElideRight
-                                    }
-
-                                    Row {
-                                        spacing: 10
-
-                                        Text {
-                                            text: dev.d.state === BluetoothDeviceState.Connecting ? "Connecting..." : (dev.d.state === BluetoothDeviceState.Disconnecting ? "Disconnecting..." : (dev.d.connected ? "Connected" : (dev.d.paired ? "Paired" : "Available")))
-                                            color: dev.d.connected ? Theme.gold : Theme.alpha(Theme.fg, 0.65)
-                                            font.family: Theme.mono
-                                            font.pixelSize: 11
-                                        }
-
-                                        Row {
-                                            visible: dev.d.connected && dev.d.batteryAvailable
-                                            spacing: 6
-
-                                            Meter {
-                                                width: 40
-                                                height: 6
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                value: dev.d.battery
-                                                lowIsBad: true
-                                            }
-
-                                            Text {
-                                                text: Math.round(dev.d.battery * 100) + "%"
-                                                color: Theme.fg
-                                                font.family: Theme.mono
-                                                font.pixelSize: 11
-                                                font.bold: true
-                                            }
-                                        }
-                                    }
-                                }
-
-                                ActionButton {
-                                    id: devButton
-                                    width: 116
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    label: dev.d.connected ? "DISCONNECT" : (dev.d.paired ? "CONNECT" : "PAIR")
-                                    active: dev.d.connected
-
-                                    onClicked: {
-                                        if (dev.d.connected) {
-                                            dev.d.disconnect();
-                                        } else if (dev.d.paired) {
-                                            dev.d.connect();
-                                        } else {
-                                            dev.d.trusted = true;
-                                            dev.d.pair();
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Audio profile of a connected device
-                            Flow {
-                                visible: dev.d.connected && dev.profileButtons.length > 0
-                                width: parent.width
-                                spacing: 8
-
-                                Repeater {
-                                    model: dev.profileButtons
-
-                                    ActionButton {
-                                        required property var modelData
-
-                                        label: modelData.label
-                                        active: dev.card !== null && page.profileLabel(dev.card.active) === modelData.label
-
-                                        onClicked: {
-                                            Quickshell.execDetached(["pactl", "set-card-profile", dev.cardName, modelData.name]);
-                                            afterProfile.restart();
-                                        }
-                                    }
-                                }
-                            }
-
-                            Text {
-                                visible: dev.d.connected && dev.profileButtons.length > 1
-                                width: parent.width
-                                text: "A2DP: music quality.  HANDS-FREE: microphone, lower quality."
-                                color: Theme.alpha(Theme.fg, 0.55)
-                                font.family: Theme.mono
-                                font.pixelSize: 10
-                                wrapMode: Text.Wrap
-                            }
+                        onProfileChosen: name => {
+                            Quickshell.execDetached(["pactl", "set-card-profile", devRow.cardName, name]);
+                            afterProfile.restart();
                         }
                     }
                 }

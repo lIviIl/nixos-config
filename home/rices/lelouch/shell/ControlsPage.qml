@@ -7,6 +7,8 @@ import Quickshell.Services.Pipewire
 Item {
     id: page
 
+    implicitHeight: layout.implicitHeight
+
     // ---------------- Audio ----------------
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property var source: Pipewire.defaultAudioSource
@@ -125,12 +127,12 @@ Item {
     }
 
     ColumnLayout {
+        id: layout
         anchors.fill: parent
         spacing: 12
 
         // ---------------- AUDIO OUTPUT ----------------
         SectionCard {
-            Layout.preferredHeight: 100
             icon: "speaker"
             iconLevel: page.sinkVolume
             iconMuted: page.sinkMuted
@@ -159,110 +161,90 @@ Item {
             }
         }
 
-        // ---------------- APPLICATIONS (takes the remaining height) ----------------
+        // ---------------- APPLICATIONS ----------------
         SectionCard {
-            Layout.fillHeight: true
-            Layout.minimumHeight: 100
             icon: "apps"
             title: "APPLICATIONS"
             subtitle: page.streams.length + " playing"
 
-            Item {
-                id: appsArea
+            Text {
+                visible: page.streams.length === 0
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
+                text: "Nothing is playing sound"
+                color: Theme.alpha(Theme.fg, 0.7)
+                font.family: Theme.mono
+                font.pixelSize: 12
+            }
 
-                readonly property int capacity: Math.max(1, Math.floor(height / 48))
+            // Three apps fit; more scroll
+            Scroller {
+                id: appScroll
+                visible: page.streams.length > 0
+                maxHeight: 144
 
-                Text {
-                    visible: page.streams.length === 0
-                    text: "Nothing is playing sound"
-                    color: Theme.alpha(Theme.fg, 0.7)
-                    font.family: Theme.mono
-                    font.pixelSize: 12
-                }
+                Repeater {
+                    model: page.streams
 
-                Column {
-                    width: parent.width
-                    spacing: 6
+                    Column {
+                        id: app
 
-                    Repeater {
-                        model: page.streams.slice(0, appsArea.capacity)
+                        required property var modelData
 
-                        Column {
-                            id: app
+                        readonly property string appName: (modelData.properties && modelData.properties["application.name"]) || modelData.nickname || modelData.name
 
-                            required property var modelData
+                        width: parent.width
+                        spacing: 2
 
-                            readonly property string appName: (modelData.properties && modelData.properties["application.name"]) || modelData.nickname || modelData.name
-
+                        Item {
                             width: parent.width
-                            spacing: 2
+                            height: 18
 
-                            Item {
-                                width: parent.width
-                                height: 18
-
-                                Text {
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: parent.width - 80
-                                    elide: Text.ElideRight
-                                    text: app.appName
-                                    color: Theme.fg
-                                    font.family: Theme.mono
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                }
-
-                                Text {
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: app.modelData.audio.muted ? "MUTED" : Math.round(app.modelData.audio.volume * 100) + "%"
-                                    color: app.modelData.audio.muted ? Theme.crimson : Theme.alpha(Theme.fg, 0.8)
-                                    font.family: Theme.mono
-                                    font.pixelSize: 12
-                                    font.bold: true
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        anchors.margins: -6
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: app.modelData.audio.muted = !app.modelData.audio.muted
-                                    }
-                                }
+                            Text {
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width - 80
+                                elide: Text.ElideRight
+                                text: app.appName
+                                color: Theme.fg
+                                font.family: Theme.mono
+                                font.pixelSize: 12
+                                font.bold: true
                             }
 
-                            Slider {
-                                width: parent.width
-                                height: 22
-                                value: app.modelData.audio.volume
-                                onMoved: v => {
-                                    app.modelData.audio.volume = v;
-                                    app.modelData.audio.muted = v <= 0.005;
+                            Text {
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: app.modelData.audio.muted ? "MUTED" : Math.round(app.modelData.audio.volume * 100) + "%"
+                                color: app.modelData.audio.muted ? Theme.crimson : Theme.alpha(Theme.fg, 0.8)
+                                font.family: Theme.mono
+                                font.pixelSize: 12
+                                font.bold: true
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    anchors.margins: -6
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: app.modelData.audio.muted = !app.modelData.audio.muted
                                 }
                             }
                         }
-                    }
-                }
 
-                Text {
-                    visible: page.streams.length > appsArea.capacity
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    text: "+" + (page.streams.length - appsArea.capacity) + " more"
-                    color: Theme.gold
-                    font.family: Theme.mono
-                    font.pixelSize: 11
-                    font.bold: true
+                        Slider {
+                            width: parent.width
+                            height: 22
+                            value: app.modelData.audio.volume
+                            onMoved: v => {
+                                app.modelData.audio.volume = v;
+                                app.modelData.audio.muted = v <= 0.005;
+                            }
+                        }
+                    }
                 }
             }
         }
 
         // ---------------- MICROPHONE ----------------
         SectionCard {
-            Layout.preferredHeight: 156
             icon: page.micMuted ? "micOff" : "mic"
             title: "MICROPHONE"
             subtitle: page.mic && page.mic.audio ? (page.micMuted ? "MUTED" : "LIVE") : "none"
@@ -301,7 +283,6 @@ Item {
 
         // ---------------- DISPLAY ----------------
         SectionCard {
-            Layout.preferredHeight: 100
             icon: "sun"
             title: "DISPLAY"
             subtitle: Math.round(page.brightness * 100) + "%"
@@ -320,7 +301,6 @@ Item {
 
         // ---------------- POWER ----------------
         SectionCard {
-            Layout.preferredHeight: 160
             icon: "bolt"
             title: "POWER"
             subtitle: page.profile.replace("-", " ").toUpperCase()
@@ -372,7 +352,6 @@ Item {
 
         // ---------------- SESSION ----------------
         SectionCard {
-            Layout.preferredHeight: 126
             icon: "power"
             title: "SESSION"
 

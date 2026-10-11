@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 
 // A titled, chamfered section. Children go into a column layout that fills the card.
+// The subtitle shrinks (with an ellipsis) instead of overlapping the title.
 Item {
     id: card
 
@@ -13,6 +14,7 @@ Item {
     default property alias content: body.data
 
     Layout.fillWidth: true
+    Layout.preferredWidth: 1            // equal widths when several cards share a row
     implicitHeight: 48 + body.implicitHeight + 14
 
     Chamfer {
@@ -33,6 +35,7 @@ Item {
     }
 
     Text {
+        id: titleText
         x: card.icon !== "" ? 42 : 16
         y: 12
         text: card.title
@@ -46,6 +49,9 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: 16
         y: 13
+        width: Math.max(0, Math.min(implicitWidth, card.width - titleText.x - titleText.implicitWidth - 28))
+        horizontalAlignment: Text.AlignRight
+        elide: Text.ElideRight
         text: card.subtitle
         color: Theme.fg
         font.family: Theme.mono

@@ -4,11 +4,13 @@ import Quickshell.Io
 import Quickshell.Wayland
 
 // The command center: a drawer on the right edge with one tab per page.
-// Every page fills the drawer exactly, so nothing scrolls.
+// The window is full height and never resizes; the card inside it is as tall as its page wants
+// (up to the full height), and everything outside the card is click-through.
 PanelWindow {
     id: win
 
     readonly property int drawerWidth: 700
+    readonly property real maxCard: height > 0 ? height : 900
 
     // Pages, in tab order
     readonly property var pages: [
@@ -28,6 +30,7 @@ PanelWindow {
     visible: Ui.centerOpen || card.x < drawerWidth
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
+    mask: Region { item: card }
 
     anchors {
         top: true
@@ -85,11 +88,21 @@ PanelWindow {
         Item {
             id: card
             width: parent.width
-            height: parent.height
+
+            // As tall as the page wants (header and padding take 98), up to the whole height
+            height: Math.min(win.maxCard, 98 + (pageLoader.item ? pageLoader.item.implicitHeight : 140))
+
             x: Ui.centerOpen ? 0 : win.drawerWidth + 20
             opacity: Ui.centerOpen ? 1 : 0
 
             Behavior on x {
+                NumberAnimation {
+                    duration: 220
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Behavior on height {
                 NumberAnimation {
                     duration: 220
                     easing.type: Easing.OutCubic
@@ -247,6 +260,7 @@ PanelWindow {
                 height: parent.height - 98
 
                 Loader {
+                    id: pageLoader
                     anchors.fill: parent
                     active: Ui.centerOpen || card.x < win.drawerWidth
                     sourceComponent: win.pageComponents[Ui.centerPage] ?? systemPage

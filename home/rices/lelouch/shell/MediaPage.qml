@@ -4,13 +4,15 @@ import QtQuick.Layouts
 Item {
     id: page
 
+    implicitHeight: layout.implicitHeight
+
     ColumnLayout {
+        id: layout
         anchors.fill: parent
         spacing: 12
 
         // ---------------- NOW PLAYING ----------------
         SectionCard {
-            Layout.preferredHeight: 520
             icon: "note"
             title: "NOW PLAYING"
             subtitle: Media.present ? (Media.playing ? "PLAYING" : "PAUSED") : ""
@@ -18,7 +20,7 @@ Item {
             Text {
                 visible: !Media.present
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: 36
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 text: "No media player is running"
@@ -31,8 +33,8 @@ Item {
             Item {
                 visible: Media.present
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 260
-                Layout.preferredHeight: 260
+                Layout.preferredWidth: 250
+                Layout.preferredHeight: 250
 
                 Chamfer {
                     anchors.fill: parent
@@ -48,6 +50,7 @@ Item {
                     source: Media.art
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
+                    smooth: true
                     visible: status === Image.Ready
                 }
 
@@ -162,17 +165,16 @@ Item {
             }
         }
 
-        // ---------------- SPECTRUM (takes the rest) ----------------
+        // ---------------- SPECTRUM (only while there is a player) ----------------
         SectionCard {
-            Layout.fillHeight: true
-            Layout.minimumHeight: 120
+            visible: Media.present
             icon: "speaker"
             title: "SPECTRUM"
             subtitle: Media.playing ? "LIVE" : ""
 
             Visualizer {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: 100
                 active: Media.playing
             }
         }

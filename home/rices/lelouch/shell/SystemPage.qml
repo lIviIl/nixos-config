@@ -19,7 +19,10 @@ Item {
         }
     }
 
+    implicitHeight: layout.implicitHeight
+
     ColumnLayout {
+        id: layout
         anchors.fill: parent
         spacing: 12
 
@@ -178,7 +181,7 @@ Item {
             SectionCard {
                 Layout.fillHeight: true
                 title: "NETWORK"
-                subtitle: "↓ " + Fmt.rate(SysInfo.netDown) + "   ↑ " + Fmt.rate(SysInfo.netUp)
+                subtitle: Net.connected ? Net.ssid : "offline"
 
                 Sparkline {
                     values: SysInfo.netDownHistory

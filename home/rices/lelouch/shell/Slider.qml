@@ -30,6 +30,7 @@ Item {
 
     MouseArea {
         id: area
+        preventStealing: true
         anchors.fill: parent
 
         onPressed: mouse => {

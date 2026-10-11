@@ -6,7 +6,7 @@ Item {
     id: root
 
     readonly property int maxWidth: 280
-    readonly property bool hovered: area.containsMouse
+    readonly property bool hovered: hover.hovered
     readonly property real overflow: Math.max(0, label.implicitWidth - maxWidth)
 
     visible: Media.present && Media.title !== ""
@@ -54,18 +54,19 @@ Item {
         }
     }
 
-    MouseArea {
-        id: area
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
+    // Hover and clicks are separate handlers, so a click never disturbs the hover state
+    HoverHandler {
+        id: hover
         cursorShape: Qt.PointingHandCursor
+    }
 
-        onClicked: mouse => {
-            if (mouse.button === Qt.RightButton)
-                Media.toggle();
-            else
-                Ui.toggleCenter("media");
-        }
+    TapHandler {
+        acceptedButtons: Qt.LeftButton
+        onTapped: Ui.toggleCenter("media")
+    }
+
+    TapHandler {
+        acceptedButtons: Qt.RightButton
+        onTapped: Media.toggle()
     }
 }
