@@ -1,18 +1,22 @@
 import QtQuick
 
 // Small geometric icons drawn with Canvas, so they follow the theme exactly.
-// kind: speaker, apps, mic, micOff, sun, bolt, balance, leaf, eye, lock, moon, logout, reboot, power
+// kind: speaker, apps, mic, micOff, sun, bolt, balance, leaf, eye, lock, moon, logout, reboot, power,
+//       wifi, bluetooth, headphones, play, pause, next, prev, note
+// level (0..1) only affects wifi: how many arcs are lit.
 Canvas {
     id: glyph
 
     property string kind: ""
     property color tint: Theme.fg
+    property real level: 1.0
 
     width: 18
     height: 18
 
     onTintChanged: requestPaint()
     onKindChanged: requestPaint()
+    onLevelChanged: requestPaint()
 
     onPaint: {
         const ctx = getContext("2d");
@@ -184,6 +188,71 @@ Canvas {
             ctx.beginPath();
             ctx.moveTo(9, 2);
             ctx.lineTo(9, 9);
+            ctx.stroke();
+        } else if (kind === "wifi") {
+            const radii = [4.5, 8, 11.5];
+            const need = [0.05, 0.4, 0.7];
+            for (let i = 0; i < radii.length; i++) {
+                ctx.globalAlpha = level >= need[i] ? 1.0 : 0.28;
+                ctx.beginPath();
+                ctx.arc(9, 15, radii[i], -2.36, -0.78);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+            ctx.beginPath();
+            ctx.arc(9, 15, 1.4, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (kind === "bluetooth") {
+            ctx.beginPath();
+            ctx.moveTo(4.5, 5.5);
+            ctx.lineTo(12.5, 12.5);
+            ctx.lineTo(9, 16);
+            ctx.lineTo(9, 2);
+            ctx.lineTo(12.5, 5.5);
+            ctx.lineTo(4.5, 12.5);
+            ctx.stroke();
+        } else if (kind === "headphones") {
+            ctx.beginPath();
+            ctx.arc(9, 10, 6, Math.PI, 0);
+            ctx.stroke();
+            ctx.fillRect(2.5, 9.5, 3, 5.5);
+            ctx.fillRect(12.5, 9.5, 3, 5.5);
+        } else if (kind === "play") {
+            ctx.beginPath();
+            ctx.moveTo(5, 3);
+            ctx.lineTo(15, 9);
+            ctx.lineTo(5, 15);
+            ctx.closePath();
+            ctx.fill();
+        } else if (kind === "pause") {
+            ctx.fillRect(4.5, 3, 3.5, 12);
+            ctx.fillRect(10, 3, 3.5, 12);
+        } else if (kind === "next") {
+            ctx.beginPath();
+            ctx.moveTo(3, 3);
+            ctx.lineTo(11, 9);
+            ctx.lineTo(3, 15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillRect(12.5, 3, 2.5, 12);
+        } else if (kind === "prev") {
+            ctx.beginPath();
+            ctx.moveTo(15, 3);
+            ctx.lineTo(7, 9);
+            ctx.lineTo(15, 15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillRect(3, 3, 2.5, 12);
+        } else if (kind === "note") {
+            ctx.beginPath();
+            ctx.arc(6.2, 13.3, 2.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(8.8, 13.3);
+            ctx.lineTo(8.8, 3.2);
+            ctx.lineTo(14.5, 5);
+            ctx.lineTo(14.5, 8);
+            ctx.lineTo(8.8, 6.2);
             ctx.stroke();
         }
     }

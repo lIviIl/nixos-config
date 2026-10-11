@@ -13,7 +13,9 @@ PanelWindow {
     // Pages, in tab order. Each later pass adds one here.
     readonly property var pages: [
         { id: "system", label: "SYSTEM" },
-        { id: "controls", label: "CONTROLS" }
+        { id: "controls", label: "CONTROLS" },
+        { id: "connect", label: "CONNECT" },
+        { id: "media", label: "MEDIA" }
     ]
 
     visible: Ui.centerOpen || card.x < drawerWidth
@@ -43,6 +45,18 @@ PanelWindow {
         function toggle(): void {
             Ui.centerOpen = !Ui.centerOpen;
         }
+    }
+
+    Component {
+        id: connectPage
+
+        ConnectPage {}
+    }
+
+    Component {
+        id: mediaPage
+
+        MediaPage {}
     }
 
     Component {
@@ -111,8 +125,8 @@ PanelWindow {
                     text: "COMMAND CENTER"
                     color: Theme.gold
                     font.family: Theme.serif
-                    font.pixelSize: 17
-                    font.letterSpacing: 3
+                    font.pixelSize: 15
+                    font.letterSpacing: 2
                 }
 
                 Row {
@@ -130,7 +144,7 @@ PanelWindow {
                             required property var modelData
                             readonly property bool active: win.page === modelData.id
 
-                            width: label.implicitWidth + 24
+                            width: label.implicitWidth + 18
                             height: 28
 
                             Chamfer {
@@ -200,7 +214,7 @@ PanelWindow {
                 Loader {
                     anchors.fill: parent
                     active: Ui.centerOpen || card.x < win.drawerWidth
-                    sourceComponent: win.page === "system" ? systemPage : controlsPage
+                    sourceComponent: win.page === "system" ? systemPage : (win.page === "controls" ? controlsPage : (win.page === "connect" ? connectPage : mediaPage))
                 }
             }
         }

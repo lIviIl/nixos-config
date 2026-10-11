@@ -1,11 +1,13 @@
 import QtQuick
 
-// A flat slider with a diamond handle. Drag or click; moved(v) fires while dragging (about 16 times a second).
+// A flat slider with a diamond handle. Drag or click; moved(v) fires while dragging
+// (about 16 times a second), or only on release when live is false.
 Item {
     id: slider
 
     property real value: 0              // 0..1
     property color fill: Theme.primary
+    property bool live: true
     property real preview: -1
     property real applied: -1
     readonly property real shown: preview >= 0 ? preview : value
@@ -13,6 +15,7 @@ Item {
     signal moved(real v)
 
     implicitHeight: 28
+    opacity: enabled ? 1 : 0.5
 
     function fraction(x) {
         return Math.max(0, Math.min(1, (x - 6) / (width - 12)));
@@ -32,7 +35,8 @@ Item {
         onPressed: mouse => {
             settle.stop();
             slider.preview = slider.fraction(mouse.x);
-            slider.push();
+            if (slider.live)
+                slider.push();
         }
 
         onPositionChanged: mouse => {
@@ -50,7 +54,7 @@ Item {
     Timer {
         interval: 60
         repeat: true
-        running: area.pressed
+        running: area.pressed && slider.live
         onTriggered: slider.push()
     }
 

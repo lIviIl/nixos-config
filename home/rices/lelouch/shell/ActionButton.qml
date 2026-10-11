@@ -44,6 +44,7 @@ Item {
         }
 
         Text {
+            visible: button.label !== "" || button.armed
             text: button.armed ? "CONFIRM" : button.label
             color: button.ink
             font.family: Theme.mono
