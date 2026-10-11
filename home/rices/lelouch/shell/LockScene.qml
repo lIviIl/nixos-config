@@ -26,9 +26,8 @@ Item {
     property real blaze: 0           // success: zoom, red fill, flare
     property var strips: []          // glitch slices
 
-    // The zoom ends with the whole screen red, and only then does it flash white
-    readonly property real redFill: Math.max(0, Math.min(1, (blaze - 0.45) / 0.4))
-    readonly property real whiteOut: Math.max(0, (blaze - 0.86) / 0.14)
+    // Smoothly fill the screen with crimson as the sigil expands, completely eliminating the white flash
+    readonly property real redFill: Math.max(0, Math.min(1, (blaze - 0.15) / 0.55))
 
     HoverHandler {
         onPointChanged: {
@@ -225,17 +224,18 @@ Item {
                 scale: sigil.scale
             }
 
-            // The emblem, with a slight 3D tilt
+            // The emblem, transitioning to exact screen center during blaze so the core eye engulfs the view
             Sigil {
                 id: sigil
                 size: Math.min(content.width, content.height) * 0.92
                 x: (content.width - width) / 2 - scene.px * 8 * scene.u
-                y: content.height * 0.58 - height / 2 - scene.py * 8 * scene.u
+                y: ((content.height * 0.58 - height / 2) * (1 - scene.blaze)) + ((content.height / 2 - height / 2) * scene.blaze) - scene.py * 8 * scene.u
                 typed: scene.typed
                 flare: scene.blaze
                 px: scene.px
                 py: scene.py
-                scale: 1 + 8 * scene.blaze
+                scale: 1 + 12 * scene.blaze
+                transformOrigin: Item.Center
 
                 transform: Rotation {
                     origin.x: sigil.width / 2
@@ -421,17 +421,10 @@ Item {
         opacity: scene.failFlash
     }
 
-    // Success: the whole screen goes red as the emblem arrives...
+    // Success: smooth crimson engulfment masking the expansion
     Rectangle {
         anchors.fill: parent
         color: Theme.crimson
         opacity: scene.redFill
-    }
-
-    // ...then white-hot
-    Rectangle {
-        anchors.fill: parent
-        color: "white"
-        opacity: scene.whiteOut
     }
 }
