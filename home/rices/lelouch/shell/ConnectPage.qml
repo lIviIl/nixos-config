@@ -1,64 +1,30 @@
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Bluetooth
 
-Flickable {
+Item {
     id: page
 
-    contentWidth: width
-    contentHeight: column.implicitHeight
-    clip: true
-    boundsBehavior: Flickable.StopAtBounds
-
     // ---------------- Wi-Fi ----------------
-    property bool radioOn: true
     property var networks: []
     property var knownNames: []
     property string asking: ""          // the network waiting for a password
     property string wifiMessage: ""
-
-    // nmcli's terse output: fields split on ":", with "\:" and "\\" as escapes
-    function splitTerse(line) {
-        const parts = [];
-        let cur = "";
-        for (let i = 0; i < line.length; i++) {
-            const c = line[i];
-            if (c === "\\" && i + 1 < line.length) {
-                cur += line[i + 1];
-                i++;
-            } else if (c === ":") {
-                parts.push(cur);
-                cur = "";
-            } else {
-                cur += c;
-            }
-        }
-        parts.push(cur);
-        return parts;
-    }
 
     function refreshWifi() {
         if (!listProc.running)
             listProc.running = true;
         if (!knownProc.running)
             knownProc.running = true;
-        if (!radioProc.running)
-            radioProc.running = true;
+        Net.refresh();
     }
 
     function wifiConnect(ssid, password) {
         wifiMessage = "Connecting to " + ssid + "...";
         wifiAction.command = password !== "" ? ["nmcli", "dev", "wifi", "connect", ssid, "password", password] : ["nmcli", "dev", "wifi", "connect", ssid];
         wifiAction.running = true;
-    }
-
-    Process {
-        id: radioProc
-        command: ["nmcli", "radio", "wifi"]
-        stdout: StdioCollector {
-            onStreamFinished: page.radioOn = this.text.trim() === "enabled"
-        }
     }
 
     Process {
@@ -71,7 +37,7 @@ Flickable {
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i] === "")
                         continue;
-                    const f = page.splitTerse(lines[i]);
+                    const f = Fmt.splitTerse(lines[i]);
                     if (f[1] === "802-11-wireless" || f[1] === "wifi")
                         names.push(f[0]);
                 }
@@ -90,7 +56,7 @@ Flickable {
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i] === "")
                         continue;
-                    const f = page.splitTerse(lines[i]);
+                    const f = Fmt.splitTerse(lines[i]);
                     const ssid = f[1];
                     if (!ssid)
                         continue;
@@ -140,7 +106,7 @@ Flickable {
     }
 
     Timer {
-        id: afterRescan
+        id: afterAction
         interval: 2500
         onTriggered: page.refreshWifi()
     }
@@ -155,6 +121,20 @@ Flickable {
         const list = Array.from(adapter.devices.values).filter(d => d.paired || d.connected || d.bonded || (adapter.discovering && /[A-Za-z]/.test(d.name) && !/^([0-9A-Fa-f]{2}[-:]){5}/.test(d.name)));
         list.sort((a, b) => (b.connected - a.connected) || (b.paired - a.paired) || a.name.localeCompare(b.name));
         return list;
+    }
+
+    // As many devices as fit in the space (a connected one is taller: it shows its audio profiles)
+    function fitDevices(list, h) {
+        const out = [];
+        let used = 0;
+        for (let i = 0; i < list.length; i++) {
+            const need = list[i].connected ? 124 : 52;
+            if (used + need > h && out.length > 0)
+                break;
+            out.push(list[i]);
+            used += need;
+        }
+        return out;
     }
 
     // Audio profiles of connected Bluetooth devices, from pactl
@@ -200,7 +180,6 @@ Flickable {
     }
 
     Timer {
-        id: cardRefresh
         interval: 4000
         running: true
         repeat: true
@@ -223,33 +202,32 @@ Flickable {
             page.adapter.discovering = false;
     }
 
-    Column {
-        id: column
-        width: page.width
+    ColumnLayout {
+        anchors.fill: parent
         spacing: 12
 
-        // ---------------- WI-FI ----------------
+        // ---------------- NETWORK ----------------
         SectionCard {
-            width: parent.width
+            Layout.fillHeight: true
+            Layout.preferredHeight: 100
             icon: "wifi"
-            title: "WI-FI"
-            subtitle: page.networks.filter(n => n.inUse).length > 0 ? page.networks.filter(n => n.inUse)[0].ssid : (page.radioOn ? "not connected" : "off")
+            title: "NETWORK"
+            subtitle: !Net.radioOn ? "off" : (Net.connected ? Net.ssid : "not connected")
 
             ToggleRow {
                 icon: "wifi"
-                label: "Wireless radio"
-                hint: page.radioOn ? "On" : "Off"
-                checked: page.radioOn
+                label: "Wi-Fi"
+                hint: Net.radioOn ? "On" : "Off"
+                checked: Net.radioOn
                 onToggled: {
-                    page.radioOn = !page.radioOn;
-                    Quickshell.execDetached(["nmcli", "radio", "wifi", page.radioOn ? "on" : "off"]);
-                    afterRescan.restart();
+                    Quickshell.execDetached(["nmcli", "radio", "wifi", Net.radioOn ? "off" : "on"]);
+                    afterAction.restart();
                 }
             }
 
             Text {
                 visible: page.wifiMessage !== ""
-                width: parent.width
+                Layout.fillWidth: true
                 text: page.wifiMessage
                 color: Theme.gold
                 font.family: Theme.mono
@@ -257,175 +235,210 @@ Flickable {
                 wrapMode: Text.Wrap
             }
 
-            Repeater {
-                model: page.radioOn ? page.networks.slice(0, 8) : []
+            // As many networks as fit
+            Item {
+                id: netList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+
+                readonly property int capacity: Math.max(1, Math.floor(height / 40))
+
+                Text {
+                    visible: Net.radioOn && page.networks.length === 0
+                    text: "No networks found"
+                    color: Theme.alpha(Theme.fg, 0.7)
+                    font.family: Theme.mono
+                    font.pixelSize: 12
+                }
 
                 Column {
-                    id: net
-
-                    required property var modelData
-
-                    readonly property bool known: page.knownNames.indexOf(modelData.ssid) >= 0
-
                     width: parent.width
                     spacing: 4
 
-                    Item {
-                        width: parent.width
-                        height: 36
+                    Repeater {
+                        model: Net.radioOn ? page.networks.slice(0, netList.capacity) : []
 
-                        Rectangle {
-                            anchors.fill: parent
-                            color: hover.containsMouse ? Theme.alpha(Theme.fg, 0.07) : (net.modelData.inUse ? Theme.alpha(Theme.primary, 0.2) : "transparent")
-                        }
+                        Column {
+                            id: net
 
-                        Glyph {
-                            kind: "wifi"
-                            level: net.modelData.signal
-                            tint: net.modelData.inUse ? Theme.gold : Theme.fg
-                            x: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                            required property var modelData
 
-                        Text {
-                            x: 36
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 36 - 130
-                            elide: Text.ElideRight
-                            text: net.modelData.ssid
-                            color: Theme.fg
-                            font.family: Theme.mono
-                            font.pixelSize: 13
-                            font.bold: true
-                        }
+                            readonly property bool known: page.knownNames.indexOf(modelData.ssid) >= 0
 
-                        Glyph {
-                            visible: net.modelData.secured
-                            kind: "lock"
-                            tint: Theme.alpha(Theme.fg, 0.7)
-                            anchors.right: tag.left
-                            anchors.rightMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                            width: parent.width
+                            spacing: 4
 
-                        Text {
-                            id: tag
-                            anchors.right: parent.right
-                            anchors.rightMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 86
-                            horizontalAlignment: Text.AlignRight
-                            text: net.modelData.inUse ? "CONNECTED" : (net.known ? "SAVED" : (net.modelData.secured ? "" : "OPEN"))
-                            color: Theme.gold
-                            font.family: Theme.mono
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
+                            Item {
+                                width: parent.width
+                                height: 36
 
-                        MouseArea {
-                            id: hover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-
-                            onClicked: {
-                                if (net.modelData.inUse) {
-                                    page.wifiMessage = "";
-                                    Quickshell.execDetached(["nmcli", "connection", "down", "id", net.modelData.ssid]);
-                                    afterRescan.restart();
-                                } else if (net.known || !net.modelData.secured) {
-                                    page.wifiConnect(net.modelData.ssid, "");
-                                } else {
-                                    page.asking = net.modelData.ssid;
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: hover.containsMouse ? Theme.alpha(Theme.fg, 0.07) : (net.modelData.inUse ? Theme.alpha(Theme.primary, 0.2) : "transparent")
                                 }
-                            }
-                        }
-                    }
 
-                    // Password prompt for a new protected network
-                    Item {
-                        visible: page.asking === net.modelData.ssid
-                        width: parent.width
-                        height: 34
+                                Glyph {
+                                    kind: "wifi"
+                                    level: net.modelData.signal
+                                    tint: net.modelData.inUse ? Theme.gold : Theme.fg
+                                    x: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
 
-                        Chamfer {
-                            anchors.fill: parent
-                            cut: 5
-                            strokeColor: Theme.alpha(Theme.gold, 0.8)
-                            fillTop: "transparent"
-                        }
+                                Text {
+                                    x: 36
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: parent.width - 36 - 130
+                                    elide: Text.ElideRight
+                                    text: net.modelData.ssid
+                                    color: Theme.fg
+                                    font.family: Theme.mono
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                }
 
-                        TextInput {
-                            id: password
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
-                            verticalAlignment: TextInput.AlignVCenter
-                            echoMode: TextInput.Password
-                            color: Theme.fg
-                            selectionColor: Theme.primary
-                            selectedTextColor: Theme.onPrimary
-                            font.family: Theme.mono
-                            font.pixelSize: 13
-                            clip: true
+                                Glyph {
+                                    visible: net.modelData.secured
+                                    kind: "lock"
+                                    tint: Theme.alpha(Theme.fg, 0.7)
+                                    anchors.right: tag.left
+                                    anchors.rightMargin: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
 
-                            onVisibleChanged: {
-                                if (visible) {
-                                    text = "";
-                                    forceActiveFocus();
+                                Text {
+                                    id: tag
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 86
+                                    horizontalAlignment: Text.AlignRight
+                                    text: net.modelData.inUse ? "CONNECTED" : (net.known ? "SAVED" : (net.modelData.secured ? "" : "OPEN"))
+                                    color: Theme.gold
+                                    font.family: Theme.mono
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+
+                                MouseArea {
+                                    id: hover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    onClicked: {
+                                        if (net.modelData.inUse) {
+                                            page.wifiMessage = "";
+                                            Quickshell.execDetached(["nmcli", "connection", "down", "id", net.modelData.ssid]);
+                                            afterAction.restart();
+                                        } else if (net.known || !net.modelData.secured) {
+                                            page.wifiConnect(net.modelData.ssid, "");
+                                        } else {
+                                            page.asking = net.modelData.ssid;
+                                        }
+                                    }
                                 }
                             }
 
-                            onAccepted: {
-                                page.wifiConnect(net.modelData.ssid, text);
-                                page.asking = "";
+                            // Password prompt for a new protected network
+                            Item {
+                                visible: page.asking === net.modelData.ssid
+                                width: parent.width
+                                height: 34
+
+                                Chamfer {
+                                    anchors.fill: parent
+                                    cut: 5
+                                    strokeColor: Theme.alpha(Theme.gold, 0.8)
+                                    fillTop: "transparent"
+                                }
+
+                                TextInput {
+                                    id: password
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    echoMode: TextInput.Password
+                                    color: Theme.fg
+                                    selectionColor: Theme.primary
+                                    selectedTextColor: Theme.onPrimary
+                                    font.family: Theme.mono
+                                    font.pixelSize: 13
+                                    clip: true
+
+                                    onVisibleChanged: {
+                                        if (visible) {
+                                            text = "";
+                                            forceActiveFocus();
+                                        }
+                                    }
+
+                                    onAccepted: {
+                                        page.wifiConnect(net.modelData.ssid, text);
+                                        page.asking = "";
+                                    }
+
+                                    Keys.onEscapePressed: page.asking = ""
+                                }
+
+                                Text {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 12
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: password.text === ""
+                                    text: "Password, then Enter"
+                                    color: Theme.alpha(Theme.fg, 0.5)
+                                    font.family: Theme.mono
+                                    font.pixelSize: 13
+                                }
                             }
-
-                            Keys.onEscapePressed: page.asking = ""
-                        }
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: password.text === ""
-                            text: "Password, then Enter"
-                            color: Theme.alpha(Theme.fg, 0.5)
-                            font.family: Theme.mono
-                            font.pixelSize: 13
                         }
                     }
                 }
             }
 
-            Text {
-                visible: page.radioOn && page.networks.length === 0
-                text: "No networks found"
-                color: Theme.alpha(Theme.fg, 0.7)
-                font.family: Theme.mono
-                font.pixelSize: 12
-            }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 34
 
-            ActionButton {
-                icon: "reboot"
-                label: "RESCAN"
-                enabled: page.radioOn
-                onClicked: {
-                    Quickshell.execDetached(["nmcli", "dev", "wifi", "rescan"]);
-                    afterRescan.restart();
+                ActionButton {
+                    icon: "reboot"
+                    label: "RESCAN"
+                    enabled: Net.radioOn
+                    onClicked: {
+                        Quickshell.execDetached(["nmcli", "dev", "wifi", "rescan"]);
+                        afterAction.restart();
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Text {
+                    visible: Net.radioOn && page.networks.length > netList.capacity
+                    text: "+" + (page.networks.length - netList.capacity) + " more"
+                    color: Theme.gold
+                    font.family: Theme.mono
+                    font.pixelSize: 11
+                    font.bold: true
                 }
             }
         }
 
         // ---------------- BLUETOOTH ----------------
         SectionCard {
-            width: parent.width
+            Layout.fillHeight: true
+            Layout.preferredHeight: 120
             icon: "bluetooth"
             title: "BLUETOOTH"
             subtitle: !page.adapter ? "" : (page.adapter.enabled ? page.btDevices.filter(d => d.connected).length + " connected" : "off")
 
             Text {
                 visible: !page.adapter
+                Layout.fillWidth: true
                 text: "No Bluetooth adapter found"
                 color: Theme.alpha(Theme.fg, 0.7)
                 font.family: Theme.mono
@@ -451,152 +464,166 @@ Flickable {
                 onToggled: page.adapter.discovering = !page.adapter.discovering
             }
 
-            Repeater {
-                model: page.btDevices
+            Item {
+                id: btList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+
+                readonly property var shown: page.fitDevices(page.btDevices, height)
 
                 Column {
-                    id: dev
-
-                    required property var modelData
-
-                    readonly property var d: modelData
-                    readonly property string cardName: "bluez_card." + d.address.replace(/:/g, "_")
-                    readonly property var card: page.btCards[cardName] ?? null
-
-                    // One button per distinct profile label
-                    readonly property var profileButtons: {
-                        const out = [];
-                        const seen = {};
-                        if (dev.card) {
-                            for (let i = 0; i < dev.card.profiles.length; i++) {
-                                const label = page.profileLabel(dev.card.profiles[i].name);
-                                if (!seen[label]) {
-                                    seen[label] = true;
-                                    out.push({ name: dev.card.profiles[i].name, label: label });
-                                }
-                            }
-                        }
-                        return out;
-                    }
-
                     width: parent.width
                     spacing: 6
 
-                    Item {
-                        width: parent.width
-                        height: 44
-
-                        Glyph {
-                            id: devIcon
-                            kind: dev.d.icon.indexOf("headset") >= 0 || dev.d.icon.indexOf("headphone") >= 0 ? "headphones" : "bluetooth"
-                            tint: dev.d.connected ? Theme.gold : Theme.alpha(Theme.fg, 0.8)
-                            x: 4
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                    Repeater {
+                        model: btList.shown
 
                         Column {
-                            anchors.left: devIcon.right
-                            anchors.leftMargin: 12
-                            anchors.right: devButton.left
-                            anchors.rightMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 3
+                            id: dev
 
-                            Text {
-                                width: parent.width
-                                text: dev.d.name
-                                color: Theme.fg
-                                font.family: Theme.mono
-                                font.pixelSize: 13
-                                font.bold: true
-                                elide: Text.ElideRight
+                            required property var modelData
+
+                            readonly property var d: modelData
+                            readonly property string cardName: "bluez_card." + d.address.replace(/:/g, "_")
+                            readonly property var card: page.btCards[cardName] ?? null
+
+                            // One button per distinct profile label
+                            readonly property var profileButtons: {
+                                const out = [];
+                                const seen = {};
+                                if (dev.card) {
+                                    for (let i = 0; i < dev.card.profiles.length; i++) {
+                                        const label = page.profileLabel(dev.card.profiles[i].name);
+                                        if (!seen[label]) {
+                                            seen[label] = true;
+                                            out.push({ name: dev.card.profiles[i].name, label: label });
+                                        }
+                                    }
+                                }
+                                return out;
                             }
 
-                            Row {
-                                spacing: 10
+                            width: parent.width
+                            spacing: 6
 
-                                Text {
-                                    text: dev.d.state === BluetoothDeviceState.Connecting ? "Connecting..." : (dev.d.state === BluetoothDeviceState.Disconnecting ? "Disconnecting..." : (dev.d.connected ? "Connected" : (dev.d.paired ? "Paired" : "Available")))
-                                    color: dev.d.connected ? Theme.gold : Theme.alpha(Theme.fg, 0.65)
-                                    font.family: Theme.mono
-                                    font.pixelSize: 11
+                            Item {
+                                width: parent.width
+                                height: 44
+
+                                Glyph {
+                                    id: devIcon
+                                    kind: dev.d.icon.indexOf("headset") >= 0 || dev.d.icon.indexOf("headphone") >= 0 ? "headphones" : "bluetooth"
+                                    tint: dev.d.connected ? Theme.gold : Theme.alpha(Theme.fg, 0.8)
+                                    x: 4
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
 
-                                // Battery
-                                Row {
-                                    visible: dev.d.connected && dev.d.batteryAvailable
-                                    spacing: 6
-
-                                    Meter {
-                                        width: 40
-                                        height: 6
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        value: dev.d.battery
-                                    }
+                                Column {
+                                    anchors.left: devIcon.right
+                                    anchors.leftMargin: 12
+                                    anchors.right: devButton.left
+                                    anchors.rightMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 3
 
                                     Text {
-                                        text: Math.round(dev.d.battery * 100) + "%"
+                                        width: parent.width
+                                        text: dev.d.name
                                         color: Theme.fg
                                         font.family: Theme.mono
-                                        font.pixelSize: 11
+                                        font.pixelSize: 13
                                         font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Row {
+                                        spacing: 10
+
+                                        Text {
+                                            text: dev.d.state === BluetoothDeviceState.Connecting ? "Connecting..." : (dev.d.state === BluetoothDeviceState.Disconnecting ? "Disconnecting..." : (dev.d.connected ? "Connected" : (dev.d.paired ? "Paired" : "Available")))
+                                            color: dev.d.connected ? Theme.gold : Theme.alpha(Theme.fg, 0.65)
+                                            font.family: Theme.mono
+                                            font.pixelSize: 11
+                                        }
+
+                                        Row {
+                                            visible: dev.d.connected && dev.d.batteryAvailable
+                                            spacing: 6
+
+                                            Meter {
+                                                width: 40
+                                                height: 6
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                value: dev.d.battery
+                                                lowIsBad: true
+                                            }
+
+                                            Text {
+                                                text: Math.round(dev.d.battery * 100) + "%"
+                                                color: Theme.fg
+                                                font.family: Theme.mono
+                                                font.pixelSize: 11
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
+                                }
+
+                                ActionButton {
+                                    id: devButton
+                                    width: 116
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    label: dev.d.connected ? "DISCONNECT" : (dev.d.paired ? "CONNECT" : "PAIR")
+                                    active: dev.d.connected
+
+                                    onClicked: {
+                                        if (dev.d.connected) {
+                                            dev.d.disconnect();
+                                        } else if (dev.d.paired) {
+                                            dev.d.connect();
+                                        } else {
+                                            dev.d.trusted = true;
+                                            dev.d.pair();
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        ActionButton {
-                            id: devButton
-                            width: 116
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            label: dev.d.connected ? "DISCONNECT" : (dev.d.paired ? "CONNECT" : "PAIR")
-                            active: dev.d.connected
+                            // Audio profile of a connected device
+                            Flow {
+                                visible: dev.d.connected && dev.profileButtons.length > 0
+                                width: parent.width
+                                spacing: 8
 
-                            onClicked: {
-                                if (dev.d.connected) {
-                                    dev.d.disconnect();
-                                } else if (dev.d.paired) {
-                                    dev.d.connect();
-                                } else {
-                                    dev.d.trusted = true;
-                                    dev.d.pair();
+                                Repeater {
+                                    model: dev.profileButtons
+
+                                    ActionButton {
+                                        required property var modelData
+
+                                        label: modelData.label
+                                        active: dev.card !== null && page.profileLabel(dev.card.active) === modelData.label
+
+                                        onClicked: {
+                                            Quickshell.execDetached(["pactl", "set-card-profile", dev.cardName, modelData.name]);
+                                            afterProfile.restart();
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
 
-                    // Audio profile of a connected device
-                    Flow {
-                        visible: dev.d.connected && dev.profileButtons.length > 0
-                        width: parent.width
-                        spacing: 8
-
-                        Repeater {
-                            model: dev.profileButtons
-
-                            ActionButton {
-                                required property var modelData
-
-                                label: modelData.label
-                                active: dev.card !== null && page.profileLabel(dev.card.active) === modelData.label
-
-                                onClicked: {
-                                    Quickshell.execDetached(["pactl", "set-card-profile", dev.cardName, modelData.name]);
-                                    afterProfile.restart();
-                                }
+                            Text {
+                                visible: dev.d.connected && dev.profileButtons.length > 1
+                                width: parent.width
+                                text: "A2DP: music quality.  HANDS-FREE: microphone, lower quality."
+                                color: Theme.alpha(Theme.fg, 0.55)
+                                font.family: Theme.mono
+                                font.pixelSize: 10
+                                wrapMode: Text.Wrap
                             }
                         }
-                    }
-
-                    Text {
-                        visible: dev.d.connected && dev.profileButtons.length > 1
-                        width: parent.width
-                        text: "A2DP: music quality.  HANDS-FREE: microphone, lower quality."
-                        color: Theme.alpha(Theme.fg, 0.55)
-                        font.family: Theme.mono
-                        font.pixelSize: 10
-                        wrapMode: Text.Wrap
                     }
                 }
             }

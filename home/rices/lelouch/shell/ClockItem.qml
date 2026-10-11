@@ -13,7 +13,7 @@ Row {
         onTriggered: root.now = new Date()
     }
 
-    Icon {
+    Glyph {
         anchors.verticalCenter: parent.verticalCenter
         kind: "clock"
         tint: Theme.gold

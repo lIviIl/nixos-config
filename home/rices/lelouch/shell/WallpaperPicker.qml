@@ -62,7 +62,7 @@ Panel {
             Text {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.files.length + " images   ENTER apply   ESC close"
+                text: root.files.length + " images"
                 color: Theme.alpha(Theme.fg, 0.65)
                 font.family: Theme.mono
                 font.pixelSize: 12

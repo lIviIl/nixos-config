@@ -1,6 +1,7 @@
 import QtQuick
+import QtQuick.Layouts
 
-// An icon, a label with a short hint, and a switch.
+// An icon, a label with a short hint, and a switch with an octagon knob.
 Item {
     id: row
 
@@ -11,8 +12,8 @@ Item {
 
     signal toggled()
 
-    width: parent ? parent.width : 0
-    height: 46
+    Layout.fillWidth: true
+    Layout.preferredHeight: 46
     opacity: enabled ? 1 : 0.4
 
     Glyph {
@@ -67,14 +68,15 @@ Item {
             fillTop: row.checked ? Theme.alpha(Theme.primary, 0.4) : Theme.alpha(Theme.fg, 0.08)
         }
 
-        // Diamond knob
-        Rectangle {
-            width: 10
-            height: 10
-            rotation: 45
-            color: row.checked ? Theme.gold : Theme.alpha(Theme.fg, 0.6)
+        // Octagon knob
+        Chamfer {
+            width: 14
+            height: 14
+            cut: 4
+            strokeColor: "transparent"
+            fillTop: row.checked ? Theme.gold : Theme.alpha(Theme.fg, 0.6)
             y: (toggle.height - height) / 2
-            x: (row.checked ? toggle.width - 13 : 13) - width / 2
+            x: row.checked ? toggle.width - width - 6 : 6
 
             Behavior on x {
                 NumberAnimation {

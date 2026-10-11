@@ -3,7 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Number formatting
+// Number and text helpers
 Singleton {
     function bytes(n) {
         const units = ["B", "KB", "MB", "GB", "TB"];
@@ -29,5 +29,39 @@ Singleton {
         const h = Math.floor(m / 60);
         const mm = Math.round(m % 60);
         return h + "h " + (mm < 10 ? "0" : "") + mm + "m";
+    }
+
+    // m:ss, for media
+    function clock(seconds) {
+        const s = Math.max(0, Math.floor(seconds));
+        return Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+    }
+
+    // d hh:mm:ss
+    function uptime(seconds) {
+        const s = Math.max(0, Math.floor(seconds));
+        const d = Math.floor(s / 86400);
+        const pad = n => (n < 10 ? "0" : "") + n;
+        return (d > 0 ? d + "d " : "") + pad(Math.floor(s % 86400 / 3600)) + ":" + pad(Math.floor(s % 3600 / 60)) + ":" + pad(s % 60);
+    }
+
+    // nmcli's terse output: fields split on ":", with "\:" and "\\" as escapes
+    function splitTerse(line) {
+        const parts = [];
+        let cur = "";
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === "\\" && i + 1 < line.length) {
+                cur += line[i + 1];
+                i++;
+            } else if (c === ":") {
+                parts.push(cur);
+                cur = "";
+            } else {
+                cur += c;
+            }
+        }
+        parts.push(cur);
+        return parts;
     }
 }

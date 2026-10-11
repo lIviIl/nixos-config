@@ -14,13 +14,16 @@ Item {
     property bool needsConfirm: false
     property bool armed: false
 
+    readonly property bool iconOnly: label === "" && icon !== ""
     readonly property color ink: active ? Theme.onPrimary : (danger ? Theme.crimson : Theme.fg)
 
     signal clicked()
 
-    implicitWidth: Math.ceil(content.implicitWidth) + 28
+    implicitWidth: iconOnly ? 56 : Math.ceil(content.implicitWidth) + 28
     implicitHeight: vertical ? 60 : 34
     opacity: enabled ? 1 : 0.4
+
+    onInkChanged: iconGlyph.requestPaint()
 
     Chamfer {
         anchors.fill: parent
@@ -32,12 +35,15 @@ Item {
     Grid {
         id: content
         anchors.centerIn: parent
+        // The last letter of a spaced label carries trailing space: shift to centre what you see
+        anchors.horizontalCenterOffset: button.iconOnly ? 0 : 1
         columns: button.vertical ? 1 : 2
         spacing: button.vertical ? 6 : 9
         horizontalItemAlignment: Grid.AlignHCenter
         verticalItemAlignment: Grid.AlignVCenter
 
         Glyph {
+            id: iconGlyph
             visible: button.icon !== ""
             kind: button.icon
             tint: button.ink

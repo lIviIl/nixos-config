@@ -1,15 +1,11 @@
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 
-Flickable {
+Item {
     id: page
-
-    contentWidth: width
-    contentHeight: column.implicitHeight
-    clip: true
-    boundsBehavior: Flickable.StopAtBounds
 
     // ---------------- Audio ----------------
     readonly property var sink: Pipewire.defaultAudioSink
@@ -24,12 +20,28 @@ Flickable {
     readonly property var mic: microphone ?? source
     readonly property bool denoiseOn: !!source && source.name === "rnnoise_source"
 
+    readonly property real sinkVolume: sink && sink.audio ? sink.audio.volume : 0
+    readonly property bool sinkMuted: !!sink && !!sink.audio && sink.audio.muted
+    readonly property bool micMuted: !!mic && !!mic.audio && mic.audio.muted
+
     PwObjectTracker {
         objects: [page.sink, page.mic, page.source].filter(n => n).concat(page.streams)
     }
 
-    function setVolume(id, v) {
-        Quickshell.execDetached(["wpctl", "set-volume", String(id), v.toFixed(2)]);
+    // The lowest setting mutes; moving up from it unmutes
+    function applyVolume(node, v) {
+        if (!node || !node.audio)
+            return;
+        const id = String(node.id);
+        if (v <= 0.005) {
+            Quickshell.execDetached(["wpctl", "set-volume", id, "0"]);
+            if (!node.audio.muted)
+                Quickshell.execDetached(["wpctl", "set-mute", id, "1"]);
+        } else {
+            if (node.audio.muted)
+                Quickshell.execDetached(["wpctl", "set-mute", id, "0"]);
+            Quickshell.execDetached(["wpctl", "set-volume", id, v.toFixed(2)]);
+        }
     }
 
     function toggleMute(id) {
@@ -51,10 +63,16 @@ Flickable {
         stdout: StdioCollector {
             onStreamFinished: {
                 const f = this.text.trim().split(",");
-                if (f.length >= 5)
+                // Ignore readings for a moment after the slider was used
+                if (f.length >= 5 && !holdPoll.running)
                     page.brightness = parseInt(f[3]) / 100;
             }
         }
+    }
+
+    Timer {
+        id: holdPoll
+        interval: 1800
     }
 
     // ---------------- Power profiles ----------------
@@ -106,141 +124,167 @@ Flickable {
         }
     }
 
-    Column {
-        id: column
-        width: page.width
+    ColumnLayout {
+        anchors.fill: parent
         spacing: 12
 
         // ---------------- AUDIO OUTPUT ----------------
         SectionCard {
-            width: parent.width
+            Layout.preferredHeight: 100
             icon: "speaker"
+            iconLevel: page.sinkVolume
+            iconMuted: page.sinkMuted
             title: "AUDIO OUTPUT"
-            subtitle: page.sink && page.sink.audio ? (page.sink.audio.muted ? "MUTED" : Math.round(page.sink.audio.volume * 100) + "%") : "--"
+            subtitle: page.sinkMuted ? "MUTED" : Math.round(page.sinkVolume * 100) + "%"
 
-            Item {
-                width: parent.width
-                height: 34
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 34
+                spacing: 12
 
                 Slider {
-                    anchors.left: parent.left
-                    anchors.right: muteOutput.left
-                    anchors.rightMargin: 12
-                    height: parent.height
-                    value: page.sink && page.sink.audio ? page.sink.audio.volume : 0
-                    onMoved: v => page.setVolume(page.sink.id, v)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    value: page.sinkVolume
+                    onMoved: v => page.applyVolume(page.sink, v)
                 }
 
                 ActionButton {
-                    id: muteOutput
-                    anchors.right: parent.right
-                    width: 92
-                    label: page.sink && page.sink.audio && page.sink.audio.muted ? "UNMUTE" : "MUTE"
-                    active: page.sink && page.sink.audio && page.sink.audio.muted
+                    Layout.preferredWidth: 92
+                    Layout.fillHeight: true
+                    label: page.sinkMuted ? "UNMUTE" : "MUTE"
+                    active: page.sinkMuted
                     onClicked: page.toggleMute(page.sink.id)
                 }
             }
         }
 
-        // ---------------- APPLICATIONS ----------------
+        // ---------------- APPLICATIONS (takes the remaining height) ----------------
         SectionCard {
-            width: parent.width
+            Layout.fillHeight: true
+            Layout.minimumHeight: 100
             icon: "apps"
             title: "APPLICATIONS"
             subtitle: page.streams.length + " playing"
 
-            Text {
-                visible: page.streams.length === 0
-                text: "Nothing is playing sound"
-                color: Theme.alpha(Theme.fg, 0.7)
-                font.family: Theme.mono
-                font.pixelSize: 12
-            }
+            Item {
+                id: appsArea
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
 
-            Repeater {
-                model: page.streams
+                readonly property int capacity: Math.max(1, Math.floor(height / 48))
+
+                Text {
+                    visible: page.streams.length === 0
+                    text: "Nothing is playing sound"
+                    color: Theme.alpha(Theme.fg, 0.7)
+                    font.family: Theme.mono
+                    font.pixelSize: 12
+                }
 
                 Column {
-                    id: app
-
-                    required property var modelData
-
-                    readonly property string appName: (modelData.properties && modelData.properties["application.name"]) || modelData.nickname || modelData.name
-
                     width: parent.width
-                    spacing: 2
+                    spacing: 6
 
-                    Item {
-                        width: parent.width
-                        height: 18
+                    Repeater {
+                        model: page.streams.slice(0, appsArea.capacity)
 
-                        Text {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 80
-                            elide: Text.ElideRight
-                            text: app.appName
-                            color: Theme.fg
-                            font.family: Theme.mono
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
+                        Column {
+                            id: app
 
-                        Text {
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: app.modelData.audio.muted ? "MUTED" : Math.round(app.modelData.audio.volume * 100) + "%"
-                            color: app.modelData.audio.muted ? Theme.crimson : Theme.alpha(Theme.fg, 0.8)
-                            font.family: Theme.mono
-                            font.pixelSize: 12
-                            font.bold: true
+                            required property var modelData
 
-                            MouseArea {
-                                anchors.fill: parent
-                                anchors.margins: -6
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: app.modelData.audio.muted = !app.modelData.audio.muted
+                            readonly property string appName: (modelData.properties && modelData.properties["application.name"]) || modelData.nickname || modelData.name
+
+                            width: parent.width
+                            spacing: 2
+
+                            Item {
+                                width: parent.width
+                                height: 18
+
+                                Text {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: parent.width - 80
+                                    elide: Text.ElideRight
+                                    text: app.appName
+                                    color: Theme.fg
+                                    font.family: Theme.mono
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                }
+
+                                Text {
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: app.modelData.audio.muted ? "MUTED" : Math.round(app.modelData.audio.volume * 100) + "%"
+                                    color: app.modelData.audio.muted ? Theme.crimson : Theme.alpha(Theme.fg, 0.8)
+                                    font.family: Theme.mono
+                                    font.pixelSize: 12
+                                    font.bold: true
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        anchors.margins: -6
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: app.modelData.audio.muted = !app.modelData.audio.muted
+                                    }
+                                }
+                            }
+
+                            Slider {
+                                width: parent.width
+                                height: 22
+                                value: app.modelData.audio.volume
+                                onMoved: v => {
+                                    app.modelData.audio.volume = v;
+                                    app.modelData.audio.muted = v <= 0.005;
+                                }
                             }
                         }
                     }
+                }
 
-                    Slider {
-                        width: parent.width
-                        height: 22
-                        value: app.modelData.audio.volume
-                        onMoved: v => app.modelData.audio.volume = v
-                    }
+                Text {
+                    visible: page.streams.length > appsArea.capacity
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    text: "+" + (page.streams.length - appsArea.capacity) + " more"
+                    color: Theme.gold
+                    font.family: Theme.mono
+                    font.pixelSize: 11
+                    font.bold: true
                 }
             }
         }
 
         // ---------------- MICROPHONE ----------------
         SectionCard {
-            width: parent.width
-            icon: page.mic && page.mic.audio && page.mic.audio.muted ? "micOff" : "mic"
+            Layout.preferredHeight: 156
+            icon: page.micMuted ? "micOff" : "mic"
             title: "MICROPHONE"
-            subtitle: page.mic && page.mic.audio ? (page.mic.audio.muted ? "MUTED" : "LIVE") : "none"
+            subtitle: page.mic && page.mic.audio ? (page.micMuted ? "MUTED" : "LIVE") : "none"
 
-            Item {
-                width: parent.width
-                height: 34
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 34
+                spacing: 12
 
                 Slider {
-                    anchors.left: parent.left
-                    anchors.right: muteMic.left
-                    anchors.rightMargin: 12
-                    height: parent.height
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     value: page.mic && page.mic.audio ? page.mic.audio.volume : 0
-                    onMoved: v => page.setVolume(page.mic.id, v)
+                    onMoved: v => page.applyVolume(page.mic, v)
                 }
 
                 ActionButton {
-                    id: muteMic
-                    anchors.right: parent.right
-                    width: 92
-                    label: page.mic && page.mic.audio && page.mic.audio.muted ? "UNMUTE" : "MUTE"
-                    active: page.mic && page.mic.audio && page.mic.audio.muted
-                    danger: page.mic && page.mic.audio && page.mic.audio.muted
+                    Layout.preferredWidth: 92
+                    Layout.fillHeight: true
+                    label: page.micMuted ? "UNMUTE" : "MUTE"
+                    active: page.micMuted
+                    danger: page.micMuted
                     onClicked: page.toggleMute(page.mic.id)
                 }
             }
@@ -257,32 +301,38 @@ Flickable {
 
         // ---------------- DISPLAY ----------------
         SectionCard {
-            width: parent.width
+            Layout.preferredHeight: 100
             icon: "sun"
             title: "DISPLAY"
             subtitle: Math.round(page.brightness * 100) + "%"
 
             Slider {
-                width: parent.width
-                height: 28
+                Layout.fillWidth: true
+                Layout.preferredHeight: 28
                 value: page.brightness
-                onMoved: v => Quickshell.execDetached(["brightnessctl", "-q", "set", Math.max(1, Math.round(v * 100)) + "%"])
+                onMoved: v => {
+                    page.brightness = v;
+                    holdPoll.restart();
+                    Quickshell.execDetached(["brightnessctl", "-q", "set", Math.max(1, Math.round(v * 100)) + "%"]);
+                }
             }
         }
 
         // ---------------- POWER ----------------
         SectionCard {
-            width: parent.width
+            Layout.preferredHeight: 160
             icon: "bolt"
             title: "POWER"
             subtitle: page.profile.replace("-", " ").toUpperCase()
 
-            Row {
-                width: parent.width
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 34
                 spacing: 8
 
                 ActionButton {
-                    width: Math.floor((parent.width - 16) / 3)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     icon: "bolt"
                     label: "PERFORMANCE"
                     active: page.profile === "performance"
@@ -291,7 +341,8 @@ Flickable {
                 }
 
                 ActionButton {
-                    width: Math.floor((parent.width - 16) / 3)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     icon: "balance"
                     label: "BALANCED"
                     active: page.profile === "balanced"
@@ -300,7 +351,8 @@ Flickable {
                 }
 
                 ActionButton {
-                    width: Math.floor((parent.width - 16) / 3)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     icon: "leaf"
                     label: "POWER SAVER"
                     active: page.profile === "power-saver"
@@ -320,16 +372,18 @@ Flickable {
 
         // ---------------- SESSION ----------------
         SectionCard {
-            width: parent.width
+            Layout.preferredHeight: 126
             icon: "power"
             title: "SESSION"
 
-            Row {
-                width: parent.width
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 60
                 spacing: 8
 
                 ActionButton {
-                    width: Math.floor((parent.width - 32) / 5)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     vertical: true
                     icon: "lock"
                     label: "LOCK"
@@ -337,7 +391,8 @@ Flickable {
                 }
 
                 ActionButton {
-                    width: Math.floor((parent.width - 32) / 5)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     vertical: true
                     icon: "moon"
                     label: "SUSPEND"
@@ -348,7 +403,8 @@ Flickable {
                 }
 
                 ActionButton {
-                    width: Math.floor((parent.width - 32) / 5)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     vertical: true
                     icon: "logout"
                     label: "LOG OUT"
@@ -358,7 +414,8 @@ Flickable {
                 }
 
                 ActionButton {
-                    width: Math.floor((parent.width - 32) / 5)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     vertical: true
                     icon: "reboot"
                     label: "REBOOT"
@@ -368,7 +425,8 @@ Flickable {
                 }
 
                 ActionButton {
-                    width: Math.floor((parent.width - 32) / 5)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     vertical: true
                     icon: "power"
                     label: "SHUTDOWN"

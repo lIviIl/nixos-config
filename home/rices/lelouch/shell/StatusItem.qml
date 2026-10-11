@@ -1,6 +1,6 @@
 import QtQuick
 
-// An icon followed by text, with optional click and scroll handling.
+// An icon followed by text. Left click, right click and scrolling are reported.
 Item {
     id: item
 
@@ -12,6 +12,7 @@ Item {
     property bool charging: false
 
     signal clicked()
+    signal rightClicked()
     signal scrolled(int direction)
 
     implicitWidth: content.implicitWidth
@@ -22,7 +23,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 7
 
-        Icon {
+        Glyph {
             anchors.verticalCenter: parent.verticalCenter
             kind: item.kind
             tint: item.tint
@@ -40,7 +41,16 @@ Item {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: item.clicked()
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        cursorShape: Qt.PointingHandCursor
+
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton)
+                item.rightClicked();
+            else
+                item.clicked();
+        }
+
         onWheel: wheel => item.scrolled(wheel.angleDelta.y > 0 ? 1 : -1)
     }
 }

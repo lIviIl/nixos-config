@@ -1,15 +1,19 @@
 import QtQuick
+import QtQuick.Layouts
 
-// A titled, chamfered section with an optional icon. Children are stacked inside it.
+// A titled, chamfered section. Children go into a column layout that fills the card.
 Item {
     id: card
 
     property string title: ""
     property string subtitle: ""
     property string icon: ""
+    property real iconLevel: 1.0
+    property bool iconMuted: false
     default property alias content: body.data
 
-    implicitHeight: 48 + body.implicitHeight + 16
+    Layout.fillWidth: true
+    implicitHeight: 48 + body.implicitHeight + 14
 
     Chamfer {
         anchors.fill: parent
@@ -21,6 +25,8 @@ Item {
     Glyph {
         visible: card.icon !== ""
         kind: card.icon
+        level: card.iconLevel
+        muted: card.iconMuted
         tint: Theme.gold
         x: 16
         y: 12
@@ -55,11 +61,12 @@ Item {
         color: Theme.alpha(Theme.gold, 0.4)
     }
 
-    Column {
+    ColumnLayout {
         id: body
         x: 16
         y: 48
         width: parent.width - 32
+        height: Math.max(0, parent.height - 62)
         spacing: 8
     }
 }

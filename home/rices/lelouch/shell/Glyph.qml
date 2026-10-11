@@ -1,26 +1,38 @@
 import QtQuick
 
-// Small geometric icons drawn with Canvas, so they follow the theme exactly.
+// The one icon set, drawn with Canvas so it follows the theme exactly.
 // kind: speaker, apps, mic, micOff, sun, bolt, balance, leaf, eye, lock, moon, logout, reboot, power,
-//       wifi, bluetooth, headphones, play, pause, next, prev, note
-// level (0..1) only affects wifi: how many arcs are lit.
+//       wifi, bluetooth, headphones, play, pause, next, prev, note, clock, battery, keyboard
+// level 0..1: speaker arcs, wifi arcs, battery charge.  muted: speaker.  charging: battery.
+// hours/minutes: the clock's hands.
 Canvas {
     id: glyph
 
     property string kind: ""
     property color tint: Theme.fg
     property real level: 1.0
+    property bool muted: false
+    property bool charging: false
+    property int hours: 0
+    property int minutes: 0
 
     width: 18
     height: 18
+    renderStrategy: Canvas.Cooperative
 
     onTintChanged: requestPaint()
     onKindChanged: requestPaint()
     onLevelChanged: requestPaint()
+    onMutedChanged: requestPaint()
+    onChargingChanged: requestPaint()
+    onHoursChanged: requestPaint()
+    onMinutesChanged: requestPaint()
+    Component.onCompleted: requestPaint()
 
     onPaint: {
         const ctx = getContext("2d");
         ctx.clearRect(0, 0, width, height);
+        ctx.globalAlpha = 1.0;
         ctx.strokeStyle = tint;
         ctx.fillStyle = tint;
         ctx.lineWidth = 1.5;
@@ -37,12 +49,24 @@ Canvas {
             ctx.lineTo(2, 11);
             ctx.closePath();
             ctx.fill();
-            ctx.beginPath();
-            ctx.arc(9.5, 9, 3.6, -0.9, 0.9);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(9.5, 9, 6.6, -0.9, 0.9);
-            ctx.stroke();
+            if (muted || level <= 0.005) {
+                ctx.beginPath();
+                ctx.moveTo(11.5, 6.5);
+                ctx.lineTo(16.5, 11.5);
+                ctx.moveTo(16.5, 6.5);
+                ctx.lineTo(11.5, 11.5);
+                ctx.stroke();
+            } else {
+                const radii = [3, 5.5, 8];
+                const need = [0.005, 0.34, 0.67];
+                for (let i = 0; i < radii.length; i++) {
+                    if (level > need[i]) {
+                        ctx.beginPath();
+                        ctx.arc(9.5, 9, radii[i], -0.9, 0.9);
+                        ctx.stroke();
+                    }
+                }
+            }
         } else if (kind === "apps") {
             ctx.fillRect(2, 2, 6, 6);
             ctx.fillRect(10, 2, 6, 6);
@@ -94,7 +118,11 @@ Canvas {
             ctx.lineTo(13.5, 7.5);
             ctx.lineTo(9.5, 7.5);
             ctx.closePath();
+            ctx.fillStyle = tint;
             ctx.fill();
+            ctx.strokeStyle = tint;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
         } else if (kind === "balance") {
             ctx.beginPath();
             ctx.moveTo(9, 3);
@@ -219,9 +247,9 @@ Canvas {
             ctx.fillRect(12.5, 9.5, 3, 5.5);
         } else if (kind === "play") {
             ctx.beginPath();
-            ctx.moveTo(5, 3);
-            ctx.lineTo(15, 9);
-            ctx.lineTo(5, 15);
+            ctx.moveTo(4.5, 3);
+            ctx.lineTo(14.5, 9);
+            ctx.lineTo(4.5, 15);
             ctx.closePath();
             ctx.fill();
         } else if (kind === "pause") {
@@ -254,6 +282,44 @@ Canvas {
             ctx.lineTo(14.5, 8);
             ctx.lineTo(8.8, 6.2);
             ctx.stroke();
+        } else if (kind === "clock") {
+            ctx.beginPath();
+            ctx.arc(9, 9, 7, 0, Math.PI * 2);
+            ctx.stroke();
+            const m = minutes / 60;
+            const h = ((hours % 12) + m) / 12;
+            const ha = h * Math.PI * 2 - Math.PI / 2;
+            const ma = m * Math.PI * 2 - Math.PI / 2;
+            ctx.beginPath();
+            ctx.moveTo(9, 9);
+            ctx.lineTo(9 + Math.cos(ha) * 3.6, 9 + Math.sin(ha) * 3.6);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(9, 9);
+            ctx.lineTo(9 + Math.cos(ma) * 5.4, 9 + Math.sin(ma) * 5.4);
+            ctx.stroke();
+        } else if (kind === "battery") {
+            ctx.strokeRect(1.5, 5.5, 13, 7);
+            ctx.fillRect(15, 7.5, 2, 3);
+            ctx.fillRect(3.5, 7.5, Math.max(0, Math.min(1, level)) * 9, 3);
+            if (charging) {
+                ctx.fillStyle = Theme.gold;
+                ctx.beginPath();
+                ctx.moveTo(9.8, 3.5);
+                ctx.lineTo(6.2, 9.6);
+                ctx.lineTo(8.8, 9.6);
+                ctx.lineTo(8.0, 14.5);
+                ctx.lineTo(11.8, 8.2);
+                ctx.lineTo(9.2, 8.2);
+                ctx.closePath();
+                ctx.fill();
+            }
+        } else if (kind === "keyboard") {
+            ctx.strokeRect(1.5, 4.5, 15, 9);
+            ctx.fillRect(4, 6.8, 2, 1.8);
+            ctx.fillRect(8, 6.8, 2, 1.8);
+            ctx.fillRect(12, 6.8, 2, 1.8);
+            ctx.fillRect(5, 10.2, 8, 1.6);
         }
     }
 }

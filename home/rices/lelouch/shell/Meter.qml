@@ -1,12 +1,13 @@
 import QtQuick
 
-// A flat horizontal gauge; turns crimson when nearly full.
+// A flat horizontal gauge. High is bad by default (usage); with lowIsBad it turns crimson when nearly empty.
 Item {
     id: meter
 
     property real value: 0         // 0..1
     property color fill: Theme.primary
-    readonly property bool warn: value > 0.85
+    property bool lowIsBad: false
+    readonly property bool warn: lowIsBad ? value < 0.2 : value > 0.85
 
     implicitHeight: 8
     implicitWidth: 100

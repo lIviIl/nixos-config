@@ -4,15 +4,14 @@ import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 
-// The whole lock composition. The lock surface and the doors overlay both draw this.
+// The whole lock composition, drawn by the lock surface.
 Item {
     id: scene
-
 
     readonly property real u: height / 1080
     readonly property int typed: LockState.typed
 
-    // Cursor parallax, smoothed
+    // Cursor parallax, smoothed (kept deliberately small)
     property real px: LockState.px
     property real py: LockState.py
 
@@ -24,11 +23,19 @@ Item {
     property real shakeY: 0
     property real ab: 0              // chromatic aberration amount
     property real failFlash: 0
-    property real blaze: 0           // success flare
+    property real blaze: 0           // success: zoom, red fill, flare
     property var strips: []          // glitch slices
 
-    readonly property real whiteOut: Math.max(0, (blaze - 0.35) / 0.65)
+    // The zoom ends with the whole screen red, and only then does it flash white
+    readonly property real redFill: Math.max(0, Math.min(1, (blaze - 0.45) / 0.4))
+    readonly property real whiteOut: Math.max(0, (blaze - 0.86) / 0.14)
 
+    HoverHandler {
+        onPointChanged: {
+            LockState.px = (point.position.x / scene.width - 0.5) * 2;
+            LockState.py = (point.position.y / scene.height - 0.5) * 2;
+        }
+    }
 
     // The current wallpaper, as recorded by the `wallpaper` command
     FileView {
@@ -77,7 +84,7 @@ Item {
         }
     }
 
-    // ---- Success: the sigil flares ----
+    // ---- Success: the emblem rushes at the screen ----
     NumberAnimation {
         id: blazeAnim
         target: scene
@@ -153,24 +160,24 @@ Item {
             MultiEffect {
                 visible: art.status === Image.Ready
                 source: art
-                width: content.width * 1.14
-                height: content.height * 1.14
-                x: (content.width - width) / 2 - scene.px * 16 * scene.u
-                y: (content.height - height) / 2 - scene.py * 16 * scene.u
+                width: content.width * 1.1
+                height: content.height * 1.1
+                x: (content.width - width) / 2 - scene.px * 8 * scene.u
+                y: (content.height - height) / 2 - scene.py * 8 * scene.u
                 blurEnabled: true
                 blur: 1.0
                 blurMax: 48
                 brightness: -0.5
             }
 
-            // Plane 2: the art itself, dimmed; moves more
+            // Plane 2: the art itself, dimmed
             MultiEffect {
                 visible: art.status === Image.Ready
                 source: art
-                width: content.width * 1.07
-                height: content.height * 1.07
-                x: (content.width - width) / 2 - scene.px * 34 * scene.u
-                y: (content.height - height) / 2 - scene.py * 34 * scene.u
+                width: content.width * 1.05
+                height: content.height * 1.05
+                x: (content.width - width) / 2 - scene.px * 16 * scene.u
+                y: (content.height - height) / 2 - scene.py * 16 * scene.u
                 brightness: -0.28
                 opacity: 0.78
             }
@@ -208,17 +215,27 @@ Item {
                 }
             }
 
-            // Plane 3: the sigil, with its own layers inside and a slight 3D tilt
+            // The circle behind the emblem, turning slowly
+            Dial {
+                id: dial
+                size: sigil.size
+                x: sigil.x
+                y: sigil.y
+                flare: scene.blaze
+                scale: sigil.scale
+            }
+
+            // The emblem, with a slight 3D tilt
             Sigil {
                 id: sigil
                 size: Math.min(content.width, content.height) * 0.92
-                x: (content.width - width) / 2 - scene.px * 30 * scene.u
-                y: content.height * 0.58 - height / 2 - scene.py * 30 * scene.u
+                x: (content.width - width) / 2 - scene.px * 8 * scene.u
+                y: content.height * 0.58 - height / 2 - scene.py * 8 * scene.u
                 typed: scene.typed
                 flare: scene.blaze
                 px: scene.px
                 py: scene.py
-                scale: 1 + 30 * scene.blaze
+                scale: 1 + 8 * scene.blaze
 
                 transform: Rotation {
                     origin.x: sigil.width / 2
@@ -226,15 +243,15 @@ Item {
                     axis.x: 0
                     axis.y: 1
                     axis.z: 0
-                    angle: scene.px * 7
+                    angle: scene.px * 3
                 }
             }
 
-            // Status line under the sigil
+            // Status line under the emblem
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                anchors.horizontalCenterOffset: -scene.px * 22 * scene.u
-                y: content.height * 0.925 - scene.py * 22 * scene.u
+                anchors.horizontalCenterOffset: -scene.px * 8 * scene.u
+                y: content.height * 0.925 - scene.py * 8 * scene.u
                 text: LockState.status
                 color: LockState.status === "COMMAND REJECTED" ? Theme.crimson : Theme.gold
                 font.family: Theme.mono
@@ -243,13 +260,13 @@ Item {
                 font.letterSpacing: 7
             }
 
-            // Plane 4, nearest: the time. Moves most.
+            // The time, nearest to you
             Item {
                 id: clockPlane
                 width: content.width
                 height: content.height * 0.4
-                x: -scene.px * 46 * scene.u
-                y: content.height * 0.05 - scene.py * 46 * scene.u
+                x: -scene.px * 16 * scene.u
+                y: content.height * 0.05 - scene.py * 16 * scene.u
 
                 transform: Rotation {
                     origin.x: clockPlane.width / 2
@@ -257,7 +274,7 @@ Item {
                     axis.x: 0
                     axis.y: 1
                     axis.z: 0
-                    angle: scene.px * 5
+                    angle: scene.px * 2
                 }
 
                 Text {
@@ -312,6 +329,49 @@ Item {
                     font.letterSpacing: Math.round(scene.height * 0.009)
                 }
             }
+
+            // ---- Corners: media, session switcher, power ----
+            LockMedia {
+                x: 40
+                y: content.height - height - 36
+            }
+
+            SessionSwitcher {
+                anchors.right: parent.right
+                anchors.rightMargin: 40
+                anchors.top: parent.top
+                anchors.topMargin: 36
+            }
+
+            Row {
+                anchors.right: parent.right
+                anchors.rightMargin: 40
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 36
+                spacing: 10
+
+                ActionButton {
+                    icon: "moon"
+                    label: "SUSPEND"
+                    onClicked: Quickshell.execDetached(["systemctl", "suspend"])
+                }
+
+                ActionButton {
+                    icon: "reboot"
+                    label: "REBOOT"
+                    danger: true
+                    needsConfirm: true
+                    onClicked: Quickshell.execDetached(["systemctl", "reboot"])
+                }
+
+                ActionButton {
+                    icon: "power"
+                    label: "SHUTDOWN"
+                    danger: true
+                    needsConfirm: true
+                    onClicked: Quickshell.execDetached(["systemctl", "poweroff"])
+                }
+            }
         }
 
         // Chromatic aberration: tinted copies of everything, split apart
@@ -361,7 +421,14 @@ Item {
         opacity: scene.failFlash
     }
 
-    // White-hot peak of the flare on success
+    // Success: the whole screen goes red as the emblem arrives...
+    Rectangle {
+        anchors.fill: parent
+        color: Theme.crimson
+        opacity: scene.redFill
+    }
+
+    // ...then white-hot
     Rectangle {
         anchors.fill: parent
         color: "white"

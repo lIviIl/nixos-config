@@ -127,15 +127,6 @@ Scope {
                 anchors.fill: parent
             }
 
-            // Cursor position drives the parallax
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onPositionChanged: mouse => {
-                    LockState.px = (mouse.x / width - 0.5) * 2;
-                    LockState.py = (mouse.y / height - 0.5) * 2;
-                }
-            }
 
             // Keyboard: there is no input box, the sigil is the feedback
             Item {

@@ -24,28 +24,6 @@ Row {
         objects: [root.sink]
     }
 
-    // ---- Wi-Fi ----
-    property string ssid: "offline"
-
-    Process {
-        id: wifiProc
-        command: ["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const line = this.text.split("\n").find(l => l.startsWith("yes:"));
-                root.ssid = line ? line.slice(4) : "offline";
-            }
-        }
-    }
-
-    Timer {
-        interval: 10000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: wifiProc.running = true
-    }
-
     // ---- Keyboard layout ----
     property string layoutName: "US"
 
@@ -88,39 +66,60 @@ Row {
     readonly property bool plugged: battery.state === UPowerDeviceState.FullyCharged
     readonly property bool low: batteryPct <= 15 && !charging && !plugged
 
+    Timer {
+        id: radioDelay
+        interval: 800
+        onTriggered: Net.refresh()
+    }
+
+    // Left click: volume panel.  Right click: the Controls tab.  Scroll: change the volume.
     StatusItem {
         kind: "volume"
         text: root.muted ? "MUTE" : Math.round(root.volume * 100) + "%"
         level: root.volume
         muted: root.muted
 
-        // Click opens the volume panel; scroll changes the volume
         onClicked: Ui.volumeOpen = !Ui.volumeOpen
+        onRightClicked: Ui.toggleCenter("controls")
         onScrolled: direction => Quickshell.execDetached(["wpctl", "set-volume", "-l", "1", "@DEFAULT_AUDIO_SINK@", direction > 0 ? "5%+" : "5%-"])
     }
 
     Divider { anchors.verticalCenter: parent.verticalCenter }
 
+    // Left click: the Connect tab.  Right click: Wi-Fi on or off.
     StatusItem {
         kind: "wifi"
-        text: root.ssid
-        level: root.ssid === "offline" ? 0 : 1
+        text: !Net.radioOn ? "off" : (Net.connected ? Net.ssid : "offline")
+        level: Net.connected ? Net.signal : 0
+
+        onClicked: Ui.toggleCenter("connect")
+        onRightClicked: {
+            Quickshell.execDetached(["nmcli", "radio", "wifi", Net.radioOn ? "off" : "on"]);
+            radioDelay.restart();
+        }
     }
 
     Divider { anchors.verticalCenter: parent.verticalCenter }
 
+    // Click: next keyboard layout
     StatusItem {
         kind: "keyboard"
         text: root.layoutName
+
+        onClicked: Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", "next"])
     }
 
     Divider { anchors.verticalCenter: parent.verticalCenter }
 
+    // Left click: the System tab.  Right click: power profiles.
     StatusItem {
         kind: "battery"
         text: Math.round(root.batteryPct) + "%"
         level: root.batteryPct / 100
         charging: root.charging
         tint: root.low ? Theme.crimson : Theme.fg
+
+        onClicked: Ui.toggleCenter("system")
+        onRightClicked: Ui.toggleCenter("controls")
     }
 }

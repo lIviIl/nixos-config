@@ -29,8 +29,15 @@ Variants {
         }
 
         Workspaces {
+            id: workspaces
             anchors.left: parent.left
             anchors.leftMargin: 18
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        NowPlaying {
+            anchors.left: workspaces.right
+            anchors.leftMargin: 28
             anchors.verticalCenter: parent.verticalCenter
         }
 

@@ -4,19 +4,26 @@ import Quickshell.Io
 import Quickshell.Wayland
 
 // The command center: a drawer on the right edge with one tab per page.
+// Every page fills the drawer exactly, so nothing scrolls.
 PanelWindow {
     id: win
 
     readonly property int drawerWidth: 700
-    property string page: "system"
 
-    // Pages, in tab order. Each later pass adds one here.
+    // Pages, in tab order
     readonly property var pages: [
         { id: "system", label: "SYSTEM" },
         { id: "controls", label: "CONTROLS" },
         { id: "connect", label: "CONNECT" },
         { id: "media", label: "MEDIA" }
     ]
+
+    readonly property var pageComponents: ({
+        system: systemPage,
+        controls: controlsPage,
+        connect: connectPage,
+        media: mediaPage
+    })
 
     visible: Ui.centerOpen || card.x < drawerWidth
     color: "transparent"
@@ -48,15 +55,9 @@ PanelWindow {
     }
 
     Component {
-        id: connectPage
+        id: systemPage
 
-        ConnectPage {}
-    }
-
-    Component {
-        id: mediaPage
-
-        MediaPage {}
+        SystemPage {}
     }
 
     Component {
@@ -66,9 +67,15 @@ PanelWindow {
     }
 
     Component {
-        id: systemPage
+        id: connectPage
 
-        SystemPage {}
+        ConnectPage {}
+    }
+
+    Component {
+        id: mediaPage
+
+        MediaPage {}
     }
 
     Item {
@@ -112,12 +119,13 @@ PanelWindow {
                 Keys.onEscapePressed: Ui.centerOpen = false
             }
 
-            // Header: title, tabs, close
+            // Header: the title, a divider, the tab bar, close
             Item {
+                id: header
                 x: 24
                 y: 18
                 width: parent.width - 48
-                height: 34
+                height: 38
 
                 Text {
                     id: title
@@ -129,49 +137,76 @@ PanelWindow {
                     font.letterSpacing: 2
                 }
 
-                Row {
+                Rectangle {
+                    id: divider
                     anchors.left: title.right
-                    anchors.leftMargin: 26
+                    anchors.leftMargin: 18
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 4
+                    width: 1
+                    height: 26
+                    color: Theme.alpha(Theme.gold, 0.7)
+                }
 
-                    Repeater {
-                        model: win.pages
+                // The tab bar sits in its own frame
+                Item {
+                    id: tabBar
+                    anchors.left: divider.right
+                    anchors.leftMargin: 18
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: tabRow.implicitWidth + 10
+                    height: 34
 
-                        Item {
-                            id: tab
+                    Chamfer {
+                        anchors.fill: parent
+                        cut: 7
+                        strokeColor: Theme.alpha(Theme.gold, 0.5)
+                        fillTop: Theme.alpha(Theme.fg, 0.05)
+                    }
 
-                            required property var modelData
-                            readonly property bool active: win.page === modelData.id
+                    Row {
+                        id: tabRow
+                        anchors.centerIn: parent
+                        spacing: 2
 
-                            width: label.implicitWidth + 18
-                            height: 28
+                        Repeater {
+                            model: win.pages
 
-                            Chamfer {
-                                anchors.fill: parent
-                                cut: 5
-                                fillTop: Theme.primary
-                                strokeColor: Theme.crimson
-                                opacity: tab.active ? 1 : 0
+                            Item {
+                                id: tab
 
-                                Behavior on opacity { NumberAnimation { duration: 160 } }
-                            }
+                                required property var modelData
+                                readonly property bool active: Ui.centerPage === modelData.id
 
-                            Text {
-                                id: label
-                                anchors.centerIn: parent
-                                text: tab.modelData.label
-                                color: tab.active ? Theme.onPrimary : Theme.alpha(Theme.fg, 0.8)
-                                font.family: Theme.mono
-                                font.pixelSize: 12
-                                font.bold: true
-                                font.letterSpacing: 2
-                            }
+                                width: label.implicitWidth + 20
+                                height: 26
 
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: win.page = tab.modelData.id
+                                Chamfer {
+                                    anchors.fill: parent
+                                    cut: 5
+                                    fillTop: Theme.primary
+                                    strokeColor: Theme.crimson
+                                    opacity: tab.active ? 1 : 0
+
+                                    Behavior on opacity { NumberAnimation { duration: 160 } }
+                                }
+
+                                Text {
+                                    id: label
+                                    anchors.centerIn: parent
+                                    anchors.horizontalCenterOffset: 1
+                                    text: tab.modelData.label
+                                    color: tab.active ? Theme.onPrimary : Theme.alpha(Theme.fg, 0.85)
+                                    font.family: Theme.mono
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    font.letterSpacing: 2
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: Ui.centerPage = tab.modelData.id
+                                }
                             }
                         }
                     }
@@ -198,7 +233,7 @@ PanelWindow {
 
             Rectangle {
                 x: 24
-                y: 58
+                y: 62
                 width: parent.width - 48
                 height: 1
                 color: Theme.alpha(Theme.gold, 0.6)
@@ -207,14 +242,14 @@ PanelWindow {
             // The current page; unloaded while the drawer is closed
             Item {
                 x: 24
-                y: 70
+                y: 74
                 width: parent.width - 48
-                height: parent.height - 94
+                height: parent.height - 98
 
                 Loader {
                     anchors.fill: parent
                     active: Ui.centerOpen || card.x < win.drawerWidth
-                    sourceComponent: win.page === "system" ? systemPage : (win.page === "controls" ? controlsPage : (win.page === "connect" ? connectPage : mediaPage))
+                    sourceComponent: win.pageComponents[Ui.centerPage] ?? systemPage
                 }
             }
         }

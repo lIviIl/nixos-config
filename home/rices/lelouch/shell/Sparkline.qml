@@ -1,6 +1,8 @@
 import QtQuick
+import QtQuick.Layouts
 
 // A filled line graph of the most recent values (newest on the right). Up to two series.
+// It stretches to fill whatever height its card gives it.
 Canvas {
     id: graph
 
@@ -10,6 +12,11 @@ Canvas {
     property color lineColor: Theme.primary
     property color lineColor2: Theme.crimson
     property int samples: 60
+
+    Layout.fillWidth: true
+    Layout.fillHeight: true
+    Layout.minimumHeight: 30
+    Layout.preferredHeight: 60
 
     onValuesChanged: requestPaint()
     onValues2Changed: requestPaint()
