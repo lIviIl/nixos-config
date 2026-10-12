@@ -30,21 +30,6 @@ Item {
         objects: [page.sink, page.mic, page.source].filter(n => n).concat(page.streams)
     }
 
-    // The lowest setting mutes; moving up from it unmutes
-    function applyVolume(node, v) {
-        if (!node || !node.audio)
-            return;
-        const id = String(node.id);
-        if (v <= 0.005) {
-            Quickshell.execDetached(["wpctl", "set-volume", id, "0"]);
-            if (!node.audio.muted)
-                Quickshell.execDetached(["wpctl", "set-mute", id, "1"]);
-        } else {
-            if (node.audio.muted)
-                Quickshell.execDetached(["wpctl", "set-mute", id, "0"]);
-            Quickshell.execDetached(["wpctl", "set-volume", id, v.toFixed(2)]);
-        }
-    }
 
     function toggleMute(id) {
         Quickshell.execDetached(["wpctl", "set-mute", String(id), "toggle"]);
@@ -148,7 +133,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     value: page.sinkVolume
-                    onMoved: v => page.applyVolume(page.sink, v)
+                    onMoved: v => AudioCtl.applyVolume(page.sink, v)
                 }
 
                 ActionButton {
@@ -258,7 +243,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     value: page.mic && page.mic.audio ? page.mic.audio.volume : 0
-                    onMoved: v => page.applyVolume(page.mic, v)
+                    onMoved: v => AudioCtl.applyVolume(page.mic, v)
                 }
 
                 ActionButton {

@@ -5,7 +5,7 @@ import Quickshell.Wayland
 import Quickshell.Services.Pam
 
 // The lock screen: a Wayland session lock whose surfaces are drawn by LockScene,
-// authenticated through PAM, with the fade-out in Veil.
+// authenticated through PAM, with the red fade-out in Veil.
 Scope {
     id: root
 
@@ -57,11 +57,11 @@ Scope {
         }
     }
 
-    // Success: let the flare build, hand over to the veil overlay (white at that instant),
-    // unlock underneath it, then open the veil.
+    // Success: the emblem flies in until the screen is solid red, the veil takes over,
+    // the session unlocks underneath it, then the red fades into the desktop.
     Timer {
         id: toVeil
-        interval: 540
+        interval: 520
         onTriggered: {
             veil.open = true;
             toUnlock.start();
@@ -123,12 +123,12 @@ Scope {
         locked: false
 
         WlSessionLockSurface {
+            // The cursor is tracked inside the scene (for the parallax)
             LockScene {
                 anchors.fill: parent
             }
 
-
-            // Keyboard: there is no input box, the sigil is the feedback
+            // Keyboard: there is no input box, the emblem is the feedback
             Item {
                 focus: true
                 Keys.onPressed: event => root.handleKey(event)

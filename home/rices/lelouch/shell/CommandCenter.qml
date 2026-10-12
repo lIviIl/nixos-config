@@ -6,11 +6,15 @@ import Quickshell.Wayland
 // The command center: a drawer on the right edge with one tab per page.
 // The window is full height and never resizes; the card inside it is as tall as its page wants
 // (up to the full height), and everything outside the card is click-through.
+// The page keeps its own final size while the card grows around it, so nothing is re-laid out mid-animation.
 PanelWindow {
     id: win
 
     readonly property int drawerWidth: 700
     readonly property real maxCard: height > 0 ? height : 900
+
+    // Where the card is heading (the card follows it with an animation)
+    readonly property real targetHeight: Math.min(maxCard, 98 + (pageLoader.item ? pageLoader.item.implicitHeight : 140))
 
     // Pages, in tab order
     readonly property var pages: [
@@ -30,7 +34,9 @@ PanelWindow {
     visible: Ui.centerOpen || card.x < drawerWidth
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
-    mask: Region { item: card }
+
+    // Clicks land on the drawer's final size; the region doesn't chase the animation
+    mask: Region { item: hitbox }
 
     anchors {
         top: true
@@ -55,6 +61,14 @@ PanelWindow {
         function toggle(): void {
             Ui.centerOpen = !Ui.centerOpen;
         }
+    }
+
+    Item {
+        id: hitbox
+        x: 0
+        y: 0
+        width: win.drawerWidth
+        height: win.targetHeight
     }
 
     Component {
@@ -88,9 +102,7 @@ PanelWindow {
         Item {
             id: card
             width: parent.width
-
-            // As tall as the page wants (header and padding take 98), up to the whole height
-            height: Math.min(win.maxCard, 98 + (pageLoader.item ? pageLoader.item.implicitHeight : 140))
+            height: win.targetHeight
 
             x: Ui.centerOpen ? 0 : win.drawerWidth + 20
             opacity: Ui.centerOpen ? 1 : 0
@@ -104,7 +116,7 @@ PanelWindow {
 
             Behavior on height {
                 NumberAnimation {
-                    duration: 220
+                    duration: 260
                     easing.type: Easing.OutCubic
                 }
             }
@@ -252,18 +264,34 @@ PanelWindow {
                 color: Theme.alpha(Theme.gold, 0.6)
             }
 
-            // The current page; unloaded while the drawer is closed
+            // The page area: clipped, so a growing card simply reveals the page
             Item {
                 x: 24
                 y: 74
                 width: parent.width - 48
                 height: parent.height - 98
+                clip: true
 
                 Loader {
                     id: pageLoader
-                    anchors.fill: parent
+                    width: parent.width
+
+                    // The page's own height, not the animating card's
+                    height: item ? item.implicitHeight : 140
+
                     active: Ui.centerOpen || card.x < win.drawerWidth
                     sourceComponent: win.pageComponents[Ui.centerPage] ?? systemPage
+
+                    onLoaded: fadeIn.restart()
+                }
+
+                NumberAnimation {
+                    id: fadeIn
+                    target: pageLoader
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 180
                 }
             }
         }

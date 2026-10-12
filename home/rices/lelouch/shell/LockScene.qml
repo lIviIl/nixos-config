@@ -11,22 +11,30 @@ Item {
     readonly property real u: height / 1080
     readonly property int typed: LockState.typed
 
-    // Cursor parallax, smoothed
+    // Cursor parallax, smoothed (kept deliberately small)
     property real px: LockState.px
     property real py: LockState.py
 
     Behavior on px { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
     Behavior on py { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
 
+    // Driven by events
     property real shakeX: 0
     property real shakeY: 0
-    property real ab: 0
+    property real ab: 0              // chromatic aberration amount
     property real failFlash: 0
-    property real blaze: 0
-    property var strips: []
+    property real blaze: 0           // success: the emblem flies in and the screen goes red
+    property var strips: []          // glitch slices
 
-    // Smooth red fill matching the Geass surge
-    readonly property real redFill: Math.max(0, Math.min(1, (blaze - 0.1) / 0.6))
+    // The emblem ignites fully on success, but stays crimson: no white
+    readonly property real ignite: blaze > 0 ? 0.02 : 0
+
+    // The whole screen is solid red by blaze 0.7, before the hand-off to the veil
+    readonly property real redFill: Math.max(0, Math.min(1, (blaze - 0.25) / 0.45))
+
+    // The zoom aims at the solid base of the emblem (below the notch)
+    readonly property real zoomX: sigil.x + sigil.width / 2
+    readonly property real zoomY: sigil.y + sigil.height / 2 + 145 * sigil.k
 
     HoverHandler {
         onPointChanged: {
@@ -35,6 +43,7 @@ Item {
         }
     }
 
+    // The current wallpaper, as recorded by the `wallpaper` command
     FileView {
         id: wallFile
         path: Quickshell.env("HOME") + "/.cache/current-wallpaper"
@@ -52,6 +61,7 @@ Item {
         }
     }
 
+    // ---- Rejection: elastic shake, chromatic split, harsh flicker ----
     ParallelAnimation {
         id: rejectAnim
 
@@ -80,13 +90,14 @@ Item {
         }
     }
 
+    // ---- Success: the emblem rushes at the screen ----
     NumberAnimation {
         id: blazeAnim
         target: scene
         property: "blaze"
         to: 1
-        duration: 520
-        easing.type: Easing.InCubic
+        duration: 460
+        easing.type: Easing.InQuad
     }
 
     Connections {
@@ -102,6 +113,7 @@ Item {
         }
     }
 
+    // New random glitch slices every few frames while the aberration is active
     Timer {
         interval: 45
         repeat: true
@@ -150,6 +162,7 @@ Item {
                 fillMode: Image.PreserveAspectCrop
             }
 
+            // Plane 1, farthest: heavily blurred and dark; moves least
             MultiEffect {
                 visible: art.status === Image.Ready
                 source: art
@@ -163,6 +176,7 @@ Item {
                 brightness: -0.5
             }
 
+            // Plane 2: the art itself, dimmed
             MultiEffect {
                 visible: art.status === Image.Ready
                 source: art
@@ -174,11 +188,13 @@ Item {
                 opacity: 0.78
             }
 
+            // Palette tint
             Rectangle {
                 anchors.fill: parent
                 color: Theme.alpha(Theme.bg, 0.3)
             }
 
+            // Vignette
             Shape {
                 anchors.fill: parent
 
@@ -205,38 +221,57 @@ Item {
                 }
             }
 
-            Dial {
-                id: dial
-                size: sigil.size
-                x: sigil.x
-                y: sigil.y
-                flare: scene.blaze
-                scale: sigil.scale
-            }
+            // Everything that flies at you shares one zoom, aimed at a solid part of the emblem
+            // and brought to the middle of the screen as it grows
+            Item {
+                id: flyer
+                width: content.width
+                height: content.height
 
-            // The emblem shifts dynamically UPWARD during expansion so the eye hits dead-center
-            Sigil {
-                id: sigil
-                size: Math.min(content.width, content.height) * 0.92
-                x: (content.width - width) / 2 - scene.px * 8 * scene.u
-                y: (content.height * 0.58 - height / 2 - scene.py * 8 * scene.u) - (height * 0.32 * scene.blaze)
-                typed: scene.typed
-                flare: scene.blaze
-                px: scene.px
-                py: scene.py
-                scale: 1 + 28 * scene.blaze
-                transformOrigin: Item.Center
+                transform: [
+                    Scale {
+                        origin.x: scene.zoomX
+                        origin.y: scene.zoomY
+                        xScale: 1 + 14 * scene.blaze
+                        yScale: 1 + 14 * scene.blaze
+                    },
+                    Translate {
+                        x: (content.width / 2 - scene.zoomX) * scene.blaze
+                        y: (content.height / 2 - scene.zoomY) * scene.blaze
+                    }
+                ]
 
-                transform: Rotation {
-                    origin.x: sigil.width / 2
-                    origin.y: sigil.height / 2
-                    axis.x: 0
-                    axis.y: 1
-                    axis.z: 0
-                    angle: scene.px * 3
+                // The circle behind the emblem, turning slowly
+                Dial {
+                    size: sigil.size
+                    x: sigil.x
+                    y: sigil.y
+                    flare: scene.ignite
+                }
+
+                // The emblem, with a slight 3D tilt
+                Sigil {
+                    id: sigil
+                    size: Math.min(content.width, content.height) * 0.92
+                    x: (content.width - width) / 2 - scene.px * 8 * scene.u
+                    y: content.height * 0.58 - height / 2 - scene.py * 8 * scene.u
+                    typed: scene.typed
+                    flare: scene.ignite
+                    px: scene.px
+                    py: scene.py
+
+                    transform: Rotation {
+                        origin.x: sigil.width / 2
+                        origin.y: sigil.height / 2
+                        axis.x: 0
+                        axis.y: 1
+                        axis.z: 0
+                        angle: scene.px * 3
+                    }
                 }
             }
 
+            // Status line under the emblem
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.horizontalCenterOffset: -scene.px * 8 * scene.u
@@ -249,6 +284,7 @@ Item {
                 font.letterSpacing: 7
             }
 
+            // The time, nearest to you
             Item {
                 id: clockPlane
                 width: content.width
@@ -294,6 +330,7 @@ Item {
                         font.letterSpacing: Math.round(scene.height * 0.006)
                     }
 
+                    // Seconds, like the last digits of a countdown
                     Text {
                         id: secs
                         x: hhmm.width + 18
@@ -317,6 +354,7 @@ Item {
                 }
             }
 
+            // ---- Corners: media, session switcher, power ----
             LockMedia {
                 x: 40
                 y: content.height - height - 36
@@ -360,6 +398,7 @@ Item {
             }
         }
 
+        // Chromatic aberration: tinted copies of everything, split apart
         MultiEffect {
             visible: scene.ab > 0
             source: content
@@ -382,6 +421,7 @@ Item {
             colorizationColor: "#00e0ff"
         }
 
+        // Glitch: horizontal slices of the screen thrown sideways
         Repeater {
             model: scene.strips
 
@@ -398,12 +438,14 @@ Item {
         }
     }
 
+    // Harsh flicker on rejection
     Rectangle {
         anchors.fill: parent
         color: Theme.crimson
         opacity: scene.failFlash
     }
 
+    // Success: the whole screen goes solid red as the emblem arrives
     Rectangle {
         anchors.fill: parent
         color: Theme.crimson

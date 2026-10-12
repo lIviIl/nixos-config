@@ -74,14 +74,14 @@ Row {
 
     // Left click: volume panel.  Right click: the Controls tab.  Scroll: change the volume.
     StatusItem {
-        kind: "volume"
+        kind: "speaker"
         text: root.muted ? "MUTE" : Math.round(root.volume * 100) + "%"
         level: root.volume
         muted: root.muted
 
         onClicked: Ui.volumeOpen = !Ui.volumeOpen
         onRightClicked: Ui.toggleCenter("controls")
-        onScrolled: direction => Quickshell.execDetached(["wpctl", "set-volume", "-l", "1", "@DEFAULT_AUDIO_SINK@", direction > 0 ? "5%+" : "5%-"])
+        onScrolled: direction => AudioCtl.step(root.sink, direction)
     }
 
     Divider { anchors.verticalCenter: parent.verticalCenter }

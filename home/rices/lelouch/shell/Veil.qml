@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// Success hand-off: this overlay takes over from the lock surface while the screen is red,
+// Success hand-off: this overlay takes over from the lock surface while the screen is solid red,
 // the session unlocks underneath it, and the red fades out into the desktop.
 PanelWindow {
     id: veil
@@ -47,7 +47,8 @@ PanelWindow {
     SequentialAnimation {
         id: playAnim
 
-        NumberAnimation { target: veil; property: "fade"; to: 0; duration: 480; easing.type: Easing.OutCubic }
+        PauseAnimation { duration: 120 }
+        NumberAnimation { target: veil; property: "fade"; to: 0; duration: 650; easing.type: Easing.InOutQuad }
 
         ScriptAction {
             script: {

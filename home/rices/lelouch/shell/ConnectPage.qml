@@ -223,6 +223,8 @@ Item {
                 font.pixelSize: 12
             }
 
+            SectionLabel { text: "AVAILABLE NETWORKS"; visible: Net.radioOn }
+
             // About six networks fit; the rest scroll
             Scroller {
                 visible: Net.radioOn && page.networks.length > 0
@@ -322,6 +324,8 @@ Item {
                 enabled: !!page.adapter && page.adapter.enabled
                 onToggled: page.adapter.discovering = !page.adapter.discovering
             }
+
+            SectionLabel { text: "DEVICES"; visible: !!page.adapter }
 
             // Two or three devices fit; the rest scroll
             Scroller {

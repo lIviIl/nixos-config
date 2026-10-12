@@ -11,7 +11,7 @@ PanelWindow {
     readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
 
     function setVolume(v) {
-        Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", v.toFixed(2)]);
+        AudioCtl.applyVolume(win.sink, v);
     }
 
     PwObjectTracker {
