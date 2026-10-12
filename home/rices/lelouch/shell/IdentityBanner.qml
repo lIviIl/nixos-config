@@ -25,25 +25,21 @@ Item {
             Layout.preferredWidth: 64
             Layout.preferredHeight: 64
 
+            // Shown when there is no picture
             Chamfer {
+                visible: face.status !== Image.Ready
                 anchors.fill: parent
-                cut: 8
+                cut: 9
                 strokeColor: Theme.gold
                 fillTop: Theme.alpha(Theme.primary, 0.3)
             }
 
-            Image {
+            OctagonImage {
                 id: face
                 anchors.fill: parent
-                anchors.margins: 4
+                cut: 9
+                sourcePx: 256
                 source: "file://" + Identity.home + "/.face"
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                smooth: true
-                mipmap: true
-                sourceSize.width: 256
-                sourceSize.height: 256
-                visible: status === Image.Ready
             }
 
             Text {

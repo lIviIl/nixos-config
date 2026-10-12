@@ -10,6 +10,7 @@
     ../../modules/nixos/fonts.nix
     ../../modules/nixos/laptop.nix
     ../../modules/nixos/apps.nix
+    ../../modules/nixos/sync.nix
     ../../modules/nixos/rebuild.nix
   ];
 

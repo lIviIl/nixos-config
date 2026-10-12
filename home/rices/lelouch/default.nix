@@ -8,6 +8,7 @@
     ./gtk.nix
     ./matugen.nix
     ./media.nix
+    ./agenda.nix
     ./lock.nix
   ];
 }

@@ -29,4 +29,12 @@ Row {
         font.pixelSize: 18
         font.letterSpacing: 3
     }
+
+    HoverHandler {
+        cursorShape: Qt.PointingHandCursor
+    }
+
+    TapHandler {
+        onTapped: Ui.toggleCenter("agenda")
+    }
 }

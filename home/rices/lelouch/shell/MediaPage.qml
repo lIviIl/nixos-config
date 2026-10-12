@@ -29,7 +29,7 @@ Item {
                 font.pixelSize: 13
             }
 
-            // Album art
+            // Album art, filling the whole octagon
             Item {
                 visible: Media.present
                 Layout.alignment: Qt.AlignHCenter
@@ -37,21 +37,18 @@ Item {
                 Layout.preferredHeight: 250
 
                 Chamfer {
+                    visible: cover.status !== Image.Ready
                     anchors.fill: parent
-                    cut: 12
+                    cut: 14
                     strokeColor: Theme.alpha(Theme.gold, 0.8)
                     fillTop: Theme.alpha(Theme.fg, 0.06)
                 }
 
-                Image {
+                OctagonImage {
                     id: cover
                     anchors.fill: parent
-                    anchors.margins: 8
+                    cut: 14
                     source: Media.art
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    smooth: true
-                    visible: status === Image.Ready
                 }
 
                 Glyph {

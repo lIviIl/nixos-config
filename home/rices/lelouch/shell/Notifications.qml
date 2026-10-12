@@ -6,25 +6,18 @@ Scope {
     id: root
 
     readonly property int maxToasts: 6
-    property int counter: 0
-    property var live: ({})
 
-    // Remove a toast from the list (animated) and tell the app it was dismissed
-    function dismiss(key) {
+    // Take a toast off the screen (animated). The notification itself stays in the history.
+    function dismissToast(key) {
         for (let i = 0; i < toasts.count; i++) {
             if (toasts.get(i).key === key) {
                 toasts.remove(i);
                 break;
             }
         }
-        const n = live[key];
-        if (n) {
-            n.dismiss();
-            delete live[key];
-        }
     }
 
-    // Toast data is copied here so a card can finish animating out after its notification is gone
+    // Toast data is copied here so a card can finish animating out
     ListModel {
         id: toasts
     }
@@ -32,11 +25,13 @@ Scope {
     NotificationServer {
         id: server
 
+        // Apps only send action buttons if the server says it supports them
+        actionsSupported: true
+
         onNotification: notification => {
             notification.tracked = true;
 
-            const key = root.counter++;
-            root.live[key] = notification;
+            const key = History.add(notification);
             toasts.append({
                 key: key,
                 summary: notification.summary,
@@ -45,9 +40,9 @@ Scope {
                 low: notification.urgency === NotificationUrgency.Low
             });
 
-            // Never stack more than fits: drop the oldest
+            // Never stack more than fits: drop the oldest toast
             if (toasts.count > root.maxToasts)
-                root.dismiss(toasts.get(0).key);
+                root.dismissToast(toasts.get(0).key);
         }
     }
 
@@ -150,7 +145,7 @@ Scope {
             }
 
             delegate: Toast {
-                onDismissRequested: root.dismiss(key)
+                onDismissRequested: root.dismissToast(key)
             }
         }
     }

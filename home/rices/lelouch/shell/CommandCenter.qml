@@ -13,22 +13,29 @@ PanelWindow {
     readonly property int drawerWidth: 700
     readonly property real maxCard: height > 0 ? height : 900
 
+    // Header, tab bar and padding around the page
+    readonly property int chrome: 130
+
     // Where the card is heading (the card follows it with an animation)
-    readonly property real targetHeight: Math.min(maxCard, 98 + (pageLoader.item ? pageLoader.item.implicitHeight : 140))
+    readonly property real targetHeight: Math.min(maxCard, chrome + (pageLoader.item ? pageLoader.item.implicitHeight : 140))
 
     // Pages, in tab order
     readonly property var pages: [
         { id: "system", label: "SYSTEM" },
         { id: "controls", label: "CONTROLS" },
         { id: "connect", label: "CONNECT" },
-        { id: "media", label: "MEDIA" }
+        { id: "media", label: "MEDIA" },
+        { id: "agenda", label: "AGENDA" },
+        { id: "alerts", label: "ALERTS" }
     ]
 
     readonly property var pageComponents: ({
         system: systemPage,
         controls: controlsPage,
         connect: connectPage,
-        media: mediaPage
+        media: mediaPage,
+        agenda: agendaPage,
+        alerts: alertsPage
     })
 
     visible: Ui.centerOpen || card.x < drawerWidth
@@ -71,29 +78,12 @@ PanelWindow {
         height: win.targetHeight
     }
 
-    Component {
-        id: systemPage
-
-        SystemPage {}
-    }
-
-    Component {
-        id: controlsPage
-
-        ControlsPage {}
-    }
-
-    Component {
-        id: connectPage
-
-        ConnectPage {}
-    }
-
-    Component {
-        id: mediaPage
-
-        MediaPage {}
-    }
+    Component { id: systemPage; SystemPage {} }
+    Component { id: controlsPage; ControlsPage {} }
+    Component { id: connectPage; ConnectPage {} }
+    Component { id: mediaPage; MediaPage {} }
+    Component { id: agendaPage; AgendaPage {} }
+    Component { id: alertsPage; AlertsPage {} }
 
     Item {
         anchors.fill: parent
@@ -144,97 +134,20 @@ PanelWindow {
                 Keys.onEscapePressed: Ui.centerOpen = false
             }
 
-            // Header: the title, a divider, the tab bar, close
+            // Row 1: the title and close
             Item {
-                id: header
                 x: 24
-                y: 18
+                y: 16
                 width: parent.width - 48
-                height: 38
+                height: 30
 
                 Text {
-                    id: title
                     anchors.verticalCenter: parent.verticalCenter
                     text: "COMMAND CENTER"
                     color: Theme.gold
                     font.family: Theme.serif
-                    font.pixelSize: 15
-                    font.letterSpacing: 2
-                }
-
-                Rectangle {
-                    id: divider
-                    anchors.left: title.right
-                    anchors.leftMargin: 18
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 1
-                    height: 26
-                    color: Theme.alpha(Theme.gold, 0.7)
-                }
-
-                // The tab bar sits in its own frame
-                Item {
-                    id: tabBar
-                    anchors.left: divider.right
-                    anchors.leftMargin: 18
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: tabRow.implicitWidth + 10
-                    height: 34
-
-                    Chamfer {
-                        anchors.fill: parent
-                        cut: 7
-                        strokeColor: Theme.alpha(Theme.gold, 0.5)
-                        fillTop: Theme.alpha(Theme.fg, 0.05)
-                    }
-
-                    Row {
-                        id: tabRow
-                        anchors.centerIn: parent
-                        spacing: 2
-
-                        Repeater {
-                            model: win.pages
-
-                            Item {
-                                id: tab
-
-                                required property var modelData
-                                readonly property bool active: Ui.centerPage === modelData.id
-
-                                width: label.implicitWidth + 20
-                                height: 26
-
-                                Chamfer {
-                                    anchors.fill: parent
-                                    cut: 5
-                                    fillTop: Theme.primary
-                                    strokeColor: Theme.crimson
-                                    opacity: tab.active ? 1 : 0
-
-                                    Behavior on opacity { NumberAnimation { duration: 160 } }
-                                }
-
-                                Text {
-                                    id: label
-                                    anchors.centerIn: parent
-                                    anchors.horizontalCenterOffset: 1
-                                    text: tab.modelData.label
-                                    color: tab.active ? Theme.onPrimary : Theme.alpha(Theme.fg, 0.85)
-                                    font.family: Theme.mono
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                    font.letterSpacing: 2
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: Ui.centerPage = tab.modelData.id
-                                }
-                            }
-                        }
-                    }
+                    font.pixelSize: 17
+                    font.letterSpacing: 3
                 }
 
                 Text {
@@ -258,7 +171,77 @@ PanelWindow {
 
             Rectangle {
                 x: 24
+                y: 52
+                width: parent.width - 48
+                height: 1
+                color: Theme.alpha(Theme.gold, 0.7)
+            }
+
+            // Row 2: the tab bar, in its own frame, with equal tabs
+            Item {
+                id: tabBar
+                x: 24
                 y: 62
+                width: parent.width - 48
+                height: 34
+
+                Chamfer {
+                    anchors.fill: parent
+                    cut: 7
+                    strokeColor: Theme.alpha(Theme.gold, 0.5)
+                    fillTop: Theme.alpha(Theme.fg, 0.05)
+                }
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 2
+
+                    Repeater {
+                        model: win.pages
+
+                        Item {
+                            id: tab
+
+                            required property var modelData
+                            readonly property bool active: Ui.centerPage === modelData.id
+
+                            width: Math.floor((tabBar.width - 12 - 2 * (win.pages.length - 1)) / win.pages.length)
+                            height: 26
+
+                            Chamfer {
+                                anchors.fill: parent
+                                cut: 5
+                                fillTop: Theme.primary
+                                strokeColor: Theme.crimson
+                                opacity: tab.active ? 1 : 0
+
+                                Behavior on opacity { NumberAnimation { duration: 160 } }
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                anchors.horizontalCenterOffset: 1
+                                text: tab.modelData.label
+                                color: tab.active ? Theme.onPrimary : Theme.alpha(Theme.fg, 0.85)
+                                font.family: Theme.mono
+                                font.pixelSize: 12
+                                font.bold: true
+                                font.letterSpacing: 2
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: Ui.centerPage = tab.modelData.id
+                            }
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                x: 24
+                y: 104
                 width: parent.width - 48
                 height: 1
                 color: Theme.alpha(Theme.gold, 0.6)
@@ -267,9 +250,9 @@ PanelWindow {
             // The page area: clipped, so a growing card simply reveals the page
             Item {
                 x: 24
-                y: 74
+                y: 116
                 width: parent.width - 48
-                height: parent.height - 98
+                height: parent.height - win.chrome + 14
                 clip: true
 
                 Loader {
