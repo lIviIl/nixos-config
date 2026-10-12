@@ -6,6 +6,7 @@
     fastfetch
     mpv
     imv
+    yazi
   ];
 
 programs.obsidian = {
