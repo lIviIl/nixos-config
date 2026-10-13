@@ -11,8 +11,6 @@ Item {
     property int viewMonth: new Date().getMonth()
     property string selectedKey: Agenda.key(new Date())
 
-    readonly property int nextYear: viewMonth === 11 ? viewYear + 1 : viewYear
-    readonly property int nextMonth: (viewMonth + 1) % 12
     readonly property date selectedDate: new Date(selectedKey + "T00:00:00")
 
     function shift(n) {
@@ -101,7 +99,7 @@ Item {
         }
     }
 
-    // One task: a checkbox, its text, a delete link
+    // One task: a checkbox, its priority and text, a delete link
     component TaskRow: Item {
         id: task
 
@@ -139,7 +137,7 @@ Item {
             text: task.item.priority
             color: Theme.crimson
             font.family: Theme.mono
-            font.pixelSize: 11
+            font.pixelSize: 12
             font.bold: true
         }
 
@@ -189,19 +187,17 @@ Item {
         // ---------------- CALENDAR ----------------
         SectionCard {
             Layout.fillHeight: true
-            icon: "clock"
+            icon: "calendar"
             title: "CALENDAR"
             subtitle: Qt.formatDate(new Date(), "ddd d MMM").toUpperCase()
 
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 30
-                spacing: 6
+                spacing: 8
 
-                ActionButton {
-                    Layout.preferredWidth: 38
-                    Layout.preferredHeight: 30
-                    label: "<"
+                ChevronButton {
+                    direction: -1
                     onClicked: page.shift(-1)
                 }
 
@@ -211,21 +207,13 @@ Item {
                     text: Qt.formatDate(new Date(page.viewYear, page.viewMonth, 1), "MMMM yyyy").toUpperCase()
                     color: Theme.fg
                     font.family: Theme.serif
-                    font.pixelSize: 15
-                    font.letterSpacing: 2
+                    font.pixelSize: 14
+                    font.letterSpacing: 1
                 }
 
-                ActionButton {
-                    Layout.preferredWidth: 38
-                    Layout.preferredHeight: 30
-                    label: ">"
+                ChevronButton {
+                    direction: 1
                     onClicked: page.shift(1)
-                }
-
-                ActionButton {
-                    Layout.preferredHeight: 30
-                    label: "TODAY"
-                    onClicked: page.goToday()
                 }
             }
 
@@ -237,24 +225,17 @@ Item {
                 onPicked: date => page.pick(date)
             }
 
-            SectionLabel {
-                text: Qt.formatDate(new Date(page.nextYear, page.nextMonth, 1), "MMMM").toUpperCase()
-            }
-
-            MonthGrid {
-                Layout.fillWidth: true
-                compact: true
-                year: page.nextYear
-                month: page.nextMonth
-                selectedKey: page.selectedKey
-                onPicked: date => page.pick(date)
+            ActionButton {
+                Layout.alignment: Qt.AlignHCenter
+                label: "TODAY"
+                onClicked: page.goToday()
             }
         }
 
         // ---------------- AGENDA ----------------
         SectionCard {
             Layout.fillHeight: true
-            icon: "note"
+            icon: "list"
             title: "AGENDA"
             subtitle: Agenda.loading ? "UPDATING" : ""
 
@@ -354,7 +335,7 @@ Item {
         // ---------------- TASKS ----------------
         SectionCard {
             Layout.columnSpan: 2
-            icon: "apps"
+            icon: "check"
             title: "TASKS"
             subtitle: Tasks.open + " open"
 
@@ -398,10 +379,10 @@ Item {
                         anchors.leftMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
                         visible: newTask.text === ""
-                        text: "Add a task, then Enter"
+                        text: "Add a task (start with (A) for priority), then Enter"
                         color: Theme.alpha(Theme.fg, 0.5)
                         font.family: Theme.mono
-                        font.pixelSize: 13
+                        font.pixelSize: 12
                     }
                 }
 

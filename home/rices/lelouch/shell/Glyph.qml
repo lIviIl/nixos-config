@@ -314,6 +314,45 @@ Canvas {
                 ctx.closePath();
                 ctx.fill();
             }
+        } else if (kind === "bell") {
+            ctx.beginPath();
+            ctx.moveTo(9, 2.5);
+            ctx.bezierCurveTo(5.5, 2.5, 4.5, 5.5, 4.5, 8.5);
+            ctx.lineTo(4.5, 11.5);
+            ctx.lineTo(3, 13);
+            ctx.lineTo(15, 13);
+            ctx.lineTo(13.5, 11.5);
+            ctx.lineTo(13.5, 8.5);
+            ctx.bezierCurveTo(13.5, 5.5, 12.5, 2.5, 9, 2.5);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(9, 14.6, 1.6, 0, Math.PI);
+            ctx.fill();
+        } else if (kind === "calendar") {
+            ctx.strokeRect(2.5, 4, 13, 11.5);
+            ctx.fillRect(2.5, 4, 13, 3.4);
+            ctx.fillRect(5.5, 2, 1.6, 3.6);
+            ctx.fillRect(10.9, 2, 1.6, 3.6);
+            ctx.fillRect(5, 9.5, 2, 2);
+            ctx.fillRect(8, 9.5, 2, 2);
+            ctx.fillRect(11, 9.5, 2, 2);
+            ctx.fillRect(5, 12.4, 2, 1.8);
+            ctx.fillRect(8, 12.4, 2, 1.8);
+        } else if (kind === "list") {
+            ctx.fillRect(2.5, 4, 2, 2);
+            ctx.fillRect(2.5, 8, 2, 2);
+            ctx.fillRect(2.5, 12, 2, 2);
+            ctx.fillRect(6.5, 4.4, 9, 1.2);
+            ctx.fillRect(6.5, 8.4, 9, 1.2);
+            ctx.fillRect(6.5, 12.4, 9, 1.2);
+        } else if (kind === "check") {
+            ctx.strokeRect(2.5, 2.5, 13, 13);
+            ctx.beginPath();
+            ctx.moveTo(5.5, 9.5);
+            ctx.lineTo(8, 12);
+            ctx.lineTo(13, 6);
+            ctx.stroke();
         } else if (kind === "keyboard") {
             ctx.strokeRect(1.5, 4.5, 15, 9);
             ctx.fillRect(4, 6.8, 2, 1.8);

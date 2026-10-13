@@ -6,8 +6,6 @@ Item {
 
     implicitHeight: layout.implicitHeight
 
-    property var expanded: ({})
-
     // The history grouped by application, most recently active first
     readonly property var groups: {
         const map = {};
@@ -24,26 +22,18 @@ Item {
         return order.map(app => ({ app: app, items: map[app] }));
     }
 
-    function toggle(key) {
-        const copy = Object.assign({}, expanded);
-        copy[key] = !copy[key];
-        expanded = copy;
-    }
-
     function stamp(ms) {
         const d = new Date(ms);
         return Agenda.key(d) === Agenda.key(new Date()) ? Qt.formatTime(d, "HH:mm") : Qt.formatDateTime(d, "d MMM  HH:mm");
     }
 
-    // One notification: summary, time, body (click to expand), its actions, a remove link
+    // One notification: summary, time, its text, its action buttons, a delete link
     component AlertRow: Item {
         id: row
 
         property var entry: ({})
-        property bool open: false
         property bool live: false
 
-        signal toggled()
         signal removed()
         signal action(string id)
 
@@ -56,12 +46,6 @@ Item {
             width: 3
             height: parent.height - 12
             color: row.entry.urgency === 2 ? Theme.crimson : (row.entry.urgency === 0 ? Theme.outline : Theme.gold)
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: row.toggled()
         }
 
         Column {
@@ -90,12 +74,32 @@ Item {
 
                 Text {
                     id: when
-                    anchors.right: parent.right
+                    anchors.right: remove.left
+                    anchors.rightMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     text: page.stamp(row.entry.time)
                     color: Theme.alpha(Theme.fg, 0.6)
                     font.family: Theme.mono
                     font.pixelSize: 10
+                }
+
+                Text {
+                    id: remove
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "DEL"
+                    color: Theme.alpha(Theme.fg, 0.55)
+                    font.family: Theme.mono
+                    font.pixelSize: 10
+                    font.bold: true
+                    font.letterSpacing: 1
+
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -6
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: row.removed()
+                    }
                 }
             }
 
@@ -107,7 +111,7 @@ Item {
                 font.family: Theme.mono
                 font.pixelSize: 11
                 wrapMode: Text.Wrap
-                maximumLineCount: row.open ? 40 : 2
+                maximumLineCount: 4
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
             }
@@ -129,23 +133,6 @@ Item {
                     }
                 }
             }
-
-            Text {
-                visible: row.open
-                text: "REMOVE"
-                color: Theme.crimson
-                font.family: Theme.mono
-                font.pixelSize: 10
-                font.bold: true
-                font.letterSpacing: 2
-
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -6
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: row.removed()
-                }
-            }
         }
     }
 
@@ -155,31 +142,53 @@ Item {
         spacing: 12
 
         SectionCard {
-            icon: "note"
+            icon: "bell"
             title: "NOTIFICATIONS"
             subtitle: History.entries.length + " saved"
 
+            // A small text action; the first click asks, the second one clears
             RowLayout {
+                visible: History.entries.length > 0
                 Layout.fillWidth: true
-                Layout.preferredHeight: 34
-
-                ActionButton {
-                    label: "CLEAR ALL"
-                    danger: true
-                    needsConfirm: true
-                    enabled: History.entries.length > 0
-                    onClicked: History.clearAll()
-                }
+                Layout.preferredHeight: 20
 
                 Item {
                     Layout.fillWidth: true
                 }
 
                 Text {
-                    text: "Click one to expand it"
-                    color: Theme.alpha(Theme.fg, 0.55)
+                    id: clearAll
+
+                    property bool armed: false
+
+                    text: armed ? "CLICK AGAIN TO CLEAR ALL" : "CLEAR ALL"
+                    color: armed ? Theme.crimson : Theme.alpha(Theme.fg, 0.7)
                     font.family: Theme.mono
-                    font.pixelSize: 10
+                    font.pixelSize: 11
+                    font.bold: true
+                    font.letterSpacing: 2
+
+                    Timer {
+                        id: disarm
+                        interval: 3000
+                        onTriggered: clearAll.armed = false
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -6
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: {
+                            if (clearAll.armed) {
+                                clearAll.armed = false;
+                                History.clearAll();
+                            } else {
+                                clearAll.armed = true;
+                                disarm.restart();
+                            }
+                        }
+                    }
                 }
             }
 
@@ -253,9 +262,7 @@ Item {
                                 required property var modelData
 
                                 entry: modelData
-                                open: !!page.expanded[modelData.key]
                                 live: History.isLive(modelData.key)
-                                onToggled: page.toggle(modelData.key)
                                 onRemoved: History.remove(modelData.key)
                                 onAction: id => History.invoke(modelData.key, id)
                             }

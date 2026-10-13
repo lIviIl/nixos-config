@@ -1,7 +1,7 @@
 import QtQuick
-import QtQuick.Effects
 
 // An image clipped to a chamfered (octagon) shape, with a gold edge drawn on top.
+// The octagon is a square intersected with a square turned 45 degrees, so no shader or mask is needed.
 Item {
     id: root
 
@@ -10,41 +10,38 @@ Item {
     property color edge: Theme.gold
     property int sourcePx: 512
     readonly property int status: image.status
+    readonly property real side: Math.min(width, height)
 
-    Image {
-        id: image
-        visible: false
-        anchors.fill: parent
-        source: root.source
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        smooth: true
-        mipmap: true
-        sourceSize.width: root.sourcePx
-        sourceSize.height: root.sourcePx
-    }
-
-    // The octagon, used as the mask
     Item {
-        id: shape
-        anchors.fill: parent
-        visible: false
-        layer.enabled: true
+        id: box
+        anchors.centerIn: parent
+        width: root.side
+        height: root.side
+        clip: true
 
-        Chamfer {
-            anchors.fill: parent
-            cut: root.cut
-            strokeColor: "transparent"
-            fillTop: "white"
+        Item {
+            id: diamond
+            anchors.centerIn: parent
+            width: (root.side - root.cut) * Math.SQRT2
+            height: width
+            rotation: 45
+            clip: true
+
+            Image {
+                id: image
+                anchors.centerIn: parent
+                width: root.side
+                height: root.side
+                rotation: -45
+                source: root.source
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                smooth: true
+                mipmap: true
+                sourceSize.width: root.sourcePx
+                sourceSize.height: root.sourcePx
+            }
         }
-    }
-
-    MultiEffect {
-        anchors.fill: parent
-        source: image
-        visible: image.status === Image.Ready
-        maskEnabled: true
-        maskSource: shape
     }
 
     Chamfer {

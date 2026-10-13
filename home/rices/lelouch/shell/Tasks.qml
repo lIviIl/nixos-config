@@ -41,21 +41,34 @@ Singleton {
         return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
     }
 
-    // todo.txt: "x 2026-10-12 2026-10-10 text" is done, "(A) text" has a priority
+    // todo.txt: "x 2026-10-12 2026-10-10 text" is done, "(A) 2026-10-10 text" has a priority.
+    // The priority may come before or after the creation date.
     function parse(line, index) {
         let text = line;
         let done = false;
         let priority = "";
+
         if (/^x\s/.test(text)) {
             done = true;
             text = text.replace(/^x\s+(\d{4}-\d{2}-\d{2}\s+)?/, "");
         }
-        const m = text.match(/^\(([A-Z])\)\s+/);
+
+        let m = text.match(/^\(([A-Z])\)\s+/);
         if (m) {
             priority = m[1];
             text = text.slice(m[0].length);
         }
+
         text = text.replace(/^\d{4}-\d{2}-\d{2}\s+/, "");
+
+        if (priority === "") {
+            m = text.match(/^\(([A-Z])\)\s+/);
+            if (m) {
+                priority = m[1];
+                text = text.slice(m[0].length);
+            }
+        }
+
         return { index: index, done: done, priority: priority, text: text };
     }
 
@@ -68,7 +81,9 @@ Singleton {
         const t = text.trim();
         if (t === "")
             return;
-        rawLines = rawLines.concat([today() + " " + t]);
+        const m = t.match(/^\(([A-Z])\)\s+(.*)$/);
+        const line = m ? "(" + m[1] + ") " + today() + " " + m[2] : today() + " " + t;
+        rawLines = rawLines.concat([line]);
         save();
     }
 

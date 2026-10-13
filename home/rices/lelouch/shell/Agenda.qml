@@ -111,7 +111,7 @@ Singleton {
                 if (t.indexOf("no-url") >= 0)
                     root.configured = false;
                 else if (t !== "")
-                    root.error = "Could not fetch the calendar";
+                    root.error = "Could not fetch the calendar: " + t.split("\n").pop().slice(0, 140);
             }
         }
 
