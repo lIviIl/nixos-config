@@ -1,5 +1,6 @@
 import QtQuick
 
+// The time. Click it for the calendar.
 Row {
     id: root
     spacing: 9
@@ -35,6 +36,6 @@ Row {
     }
 
     TapHandler {
-        onTapped: Ui.toggleCenter("agenda")
+        onTapped: Ui.togglePopup("calendar")
     }
 }

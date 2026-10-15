@@ -9,6 +9,7 @@
     ./matugen.nix
     ./media.nix
     ./agenda.nix
+    ./focus.nix
     ./lock.nix
   ];
 }

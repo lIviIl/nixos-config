@@ -37,6 +37,35 @@ Singleton {
         return Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
     }
 
+    // mm:ss, or h:mm:ss from an hour up
+    function hms(total) {
+        const s = Math.max(0, Math.floor(total));
+        const h = Math.floor(s / 3600);
+        const m = Math.floor(s % 3600 / 60);
+        const pad = n => (n < 10 ? "0" : "") + n;
+        return (h > 0 ? h + ":" + pad(m) : pad(m)) + ":" + pad(s % 60);
+    }
+
+    // "25" is minutes, "25:30" is m:ss, "1:30:00" is h:mm:ss, "90s", "5m", "2h" also work. -1 if unreadable.
+    function parseDuration(text) {
+        const t = text.trim().toLowerCase();
+        let m = t.match(/^(\d+)$/);
+        if (m)
+            return Number(m[1]) * 60;
+        m = t.match(/^(\d+):(\d{1,2})$/);
+        if (m)
+            return Number(m[1]) * 60 + Number(m[2]);
+        m = t.match(/^(\d+):(\d{1,2}):(\d{1,2})$/);
+        if (m)
+            return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
+        m = t.match(/^(\d+)\s*(s|sec|m|min|h)$/);
+        if (m) {
+            const n = Number(m[1]);
+            return m[2].startsWith("h") ? n * 3600 : (m[2].startsWith("m") ? n * 60 : n);
+        }
+        return -1;
+    }
+
     // d hh:mm:ss
     function uptime(seconds) {
         const s = Math.max(0, Math.floor(seconds));

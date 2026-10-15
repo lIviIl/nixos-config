@@ -4,9 +4,9 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Pam
 
-// The lock screen: a Wayland session lock whose surfaces are drawn by LockScene,
-// authenticated through PAM. A screenshot of the desktop is taken just before locking,
-// so the exit can fade from red into it and only then unlock, with no gap.
+// The lock screen: a Wayland session lock whose surfaces are drawn by LockScene, authenticated through PAM.
+// Any open panels are closed and a screenshot of the desktop is taken just before locking, so the exit can
+// fade from red into the desktop as it was, and only then unlock, with no gap.
 Scope {
     id: root
 
@@ -24,11 +24,11 @@ Scope {
         LockState.locked = true;
         pendingLock = true;
 
-        // One screenshot per screen; lock when they are done, or after a short wait
-        const names = Array.from(Quickshell.screens).map(s => s.name);
-        shotProc.command = ["sh", "-c", 'mkdir -p "$HOME/.cache/lelouch"; for o in "$@"; do grim -t jpeg -q 85 -o "$o" "$HOME/.cache/lelouch/lockshot-$o.jpg" & done; wait', "sh"].concat(names);
-        shotProc.running = true;
-        shotTimeout.restart();
+        // Let open panels slide away before the screenshot
+        const wasOpen = Ui.anyOpen;
+        Ui.closeAll();
+        shotDelay.interval = wasOpen ? 320 : 1;
+        shotDelay.restart();
     }
 
     function engage() {
@@ -87,14 +87,25 @@ Scope {
         }
     }
 
+    Timer {
+        id: shotDelay
+        onTriggered: {
+            const names = Array.from(Quickshell.screens).map(s => s.name);
+            shotProc.command = ["lelouch-lockshot"].concat(names);
+            shotProc.running = true;
+            shotTimeout.restart();
+        }
+    }
+
     Process {
         id: shotProc
         onExited: root.engage()
     }
 
+    // If the screenshot is slow or fails, lock anyway
     Timer {
         id: shotTimeout
-        interval: 600
+        interval: 900
         onTriggered: root.engage()
     }
 
@@ -160,7 +171,7 @@ Scope {
             // The cursor is tracked inside the scene (for the parallax)
             LockScene {
                 anchors.fill: parent
-                outputName: surface.screen ? surface.screen.name : ""
+                outputName: surface.screen && surface.screen.name ? surface.screen.name : (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "")
             }
 
             // Keyboard: there is no input box, the emblem is the feedback

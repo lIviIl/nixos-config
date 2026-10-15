@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
   python = pkgs.python3.withPackages (ps: [ ps.icalendar ps.recurring-ical-events ]);
@@ -16,4 +16,9 @@ in
       ${pkgs.curl}/bin/curl -fsSL --max-time 25 "$(cat "$url_file")" | ${python}/bin/python3 ${./ical.py} "$1" "$2"
     '')
   ];
+
+  # The folders the shell keeps its data in (the two under Sync are what Syncthing shares)
+  home.activation.lelouchDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    run mkdir -p "$HOME/Sync/todo" "$HOME/Sync/notes" "$HOME/.config/lelouch" "$HOME/.local/state/lelouch" "$HOME/.cache/lelouch"
+  '';
 }

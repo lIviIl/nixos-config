@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 
 // A todo.txt file, kept in step with your phone by Syncthing.
 // If your Syncthing folder is somewhere else, change `path`.
@@ -73,8 +72,7 @@ Singleton {
     }
 
     function save() {
-        const body = rawLines.length > 0 ? rawLines.join("\n") + "\n" : "";
-        Quickshell.execDetached(["sh", "-c", 'mkdir -p "$(dirname "$2")" && printf "%s" "$1" > "$2.tmp" && mv "$2.tmp" "$2"', "sh", body, path]);
+        store.save(rawLines.length > 0 ? rawLines.join("\n") + "\n" : "");
     }
 
     function add(text) {
@@ -108,22 +106,9 @@ Singleton {
         save();
     }
 
-    FileView {
-        id: file
+    TextStore {
+        id: store
         path: root.path
-        blockLoading: true
-        watchChanges: true
-        onFileChanged: reload()
+        onLoaded: text => root.rawLines = text.split("\n").filter(l => l.trim() !== "")
     }
-
-    readonly property string fileText: {
-        try {
-            return file.text();
-        } catch (e) {
-            return "";
-        }
-    }
-
-    onFileTextChanged: rawLines = fileText.split("\n").filter(l => l.trim() !== "")
-    Component.onCompleted: rawLines = fileText.split("\n").filter(l => l.trim() !== "")
 }

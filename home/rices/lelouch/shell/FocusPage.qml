@@ -6,73 +6,8 @@ Item {
 
     implicitHeight: layout.implicitHeight
 
-    readonly property string phaseLabel: Focus.mode === "pomodoro" ? (Focus.phase === "work" ? "FOCUS" : (Focus.phase === "short" ? "SHORT BREAK" : "LONG BREAK")) : (Focus.mode === "timer" ? "TIMER" : "STOPWATCH")
     readonly property color accent: Focus.mode === "pomodoro" && Focus.phase !== "work" ? Theme.gold : Theme.primary
-
-    function pad(n) {
-        return (n < 10 ? "0" : "") + n;
-    }
-
-    function hms(ms) {
-        const s = Focus.countdown ? Math.ceil(ms / 1000) : Math.floor(ms / 1000);
-        const h = Math.floor(s / 3600);
-        const m = Math.floor(s % 3600 / 60);
-        return (h > 0 ? h + ":" + pad(m) : pad(m)) + ":" + pad(s % 60);
-    }
-
-    // A label with  < value >  at the right
-    component Stepper: Item {
-        id: step
-
-        property string label: ""
-        property string text: ""
-
-        signal stepped(int delta)
-
-        Layout.fillWidth: true
-        Layout.preferredHeight: 34
-
-        Text {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            text: step.label
-            color: Theme.alpha(Theme.fg, 0.8)
-            font.family: Theme.mono
-            font.pixelSize: 12
-            font.bold: true
-            font.letterSpacing: 1
-        }
-
-        Row {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 8
-
-            ChevronButton {
-                direction: -1
-                onClicked: step.stepped(-1)
-            }
-
-            Item {
-                width: 80
-                height: 30
-
-                Text {
-                    anchors.centerIn: parent
-                    text: step.text
-                    color: Theme.fg
-                    font.family: Theme.mono
-                    font.pixelSize: 13
-                    font.bold: true
-                }
-            }
-
-            ChevronButton {
-                direction: 1
-                onClicked: step.stepped(1)
-            }
-        }
-    }
+    readonly property string shownText: Fmt.hms(Focus.countdown ? Math.ceil(Focus.shown / 1000) : Math.floor(Focus.shown / 1000))
 
     ColumnLayout {
         id: layout
@@ -112,13 +47,13 @@ Item {
         // ---------------- The clock ----------------
         SectionCard {
             icon: "timer"
-            title: "FOCUS"
-            subtitle: page.phaseLabel
+            title: Focus.title
+            subtitle: Focus.phaseLabel
 
             Item {
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 230
-                Layout.preferredHeight: 230
+                Layout.preferredWidth: 220
+                Layout.preferredHeight: 220
 
                 Canvas {
                     id: ring
@@ -172,17 +107,17 @@ Item {
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: page.hms(Focus.shown)
+                        text: page.shownText
                         color: Theme.fg
                         font.family: Theme.serif
                         font.weight: Font.Light
-                        font.pixelSize: 46
+                        font.pixelSize: 44
                         font.letterSpacing: 2
                     }
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: Focus.running ? page.phaseLabel : (Focus.active ? "PAUSED" : "READY")
+                        text: Focus.running ? (Focus.phaseLabel !== "" ? Focus.phaseLabel : "RUNNING") : (Focus.active ? "PAUSED" : "READY")
                         color: Focus.running ? page.accent : Theme.alpha(Theme.fg, 0.65)
                         font.family: Theme.mono
                         font.pixelSize: 11
@@ -252,25 +187,25 @@ Item {
             icon: "list"
             title: "SETTINGS"
 
-            Stepper {
+            DurationField {
                 visible: Focus.mode === "pomodoro"
                 label: "FOCUS"
-                text: Focus.workMin + " min"
-                onStepped: delta => Focus.adjust("work", delta)
+                seconds: Focus.workSec
+                onEdited: s => Focus.setLength("work", s)
             }
 
-            Stepper {
+            DurationField {
                 visible: Focus.mode === "pomodoro"
                 label: "SHORT BREAK"
-                text: Focus.shortMin + " min"
-                onStepped: delta => Focus.adjust("short", delta)
+                seconds: Focus.shortSec
+                onEdited: s => Focus.setLength("short", s)
             }
 
-            Stepper {
+            DurationField {
                 visible: Focus.mode === "pomodoro"
                 label: "LONG BREAK"
-                text: Focus.longMin + " min"
-                onStepped: delta => Focus.adjust("long", delta)
+                seconds: Focus.longSec
+                onEdited: s => Focus.setLength("long", s)
             }
 
             ToggleRow {
@@ -288,23 +223,23 @@ Item {
                 spacing: 8
 
                 Repeater {
-                    model: [5, 10, 15, 30, 60]
+                    model: [30, 60, 300, 600, 900, 1800, 3600]
 
                     ActionButton {
                         required property int modelData
 
-                        label: modelData + " MIN"
-                        active: Focus.timerMin === modelData
-                        onClicked: Focus.setTimerMinutes(modelData)
+                        label: modelData < 60 ? modelData + " SEC" : (modelData / 60) + " MIN"
+                        active: Focus.timerSec === modelData
+                        onClicked: Focus.setLength("timer", modelData)
                     }
                 }
             }
 
-            Stepper {
+            DurationField {
                 visible: Focus.mode === "timer"
                 label: "DURATION"
-                text: Focus.timerMin + " min"
-                onStepped: delta => Focus.adjust("timer", delta)
+                seconds: Focus.timerSec
+                onEdited: s => Focus.setLength("timer", s)
             }
 
             Text {
@@ -315,6 +250,15 @@ Item {
                 color: Theme.alpha(Theme.fg, 0.7)
                 font.family: Theme.mono
                 font.pixelSize: 12
+            }
+
+            ToggleRow {
+                visible: Focus.mode !== "stopwatch"
+                icon: "speaker"
+                label: "Sound"
+                hint: "Play a chime when a phase ends"
+                checked: Focus.sound
+                onToggled: Focus.sound = !Focus.sound
             }
         }
     }

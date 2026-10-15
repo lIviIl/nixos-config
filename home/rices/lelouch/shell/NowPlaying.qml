@@ -62,7 +62,7 @@ Item {
 
     TapHandler {
         acceptedButtons: Qt.LeftButton
-        onTapped: Ui.toggleCenter("media")
+        onTapped: Ui.togglePopup("media")
     }
 
     TapHandler {

@@ -120,7 +120,7 @@ Singleton {
 
     Timer {
         interval: 900000
-        running: Ui.centerOpen && Ui.centerPage === "agenda"
+        running: Ui.popup === "calendar"
         repeat: true
         onTriggered: root.refresh()
     }

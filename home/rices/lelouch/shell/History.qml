@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import Quickshell.Services.Notifications
 
 // Every notification the shell has received, kept across restarts.
@@ -14,12 +13,16 @@ Singleton {
     property int counter: Math.floor(Date.now() / 1000) - 1780000000
     property var live: ({})                  // key -> Notification (this session only)
     property int liveRev: 0
+    property int unread: 0
     readonly property int maxEntries: 150
-    readonly property string path: Quickshell.env("HOME") + "/.local/state/lelouch/notifications.json"
 
     function isLive(key) {
         liveRev;
         return !!live[key];
+    }
+
+    function markRead() {
+        unread = 0;
     }
 
     function add(n) {
@@ -40,11 +43,11 @@ Singleton {
 
         live[key] = n;
         liveRev++;
+        if (Ui.popup !== "alerts")
+            unread++;
 
         const all = [entry].concat(entries);
-        const dropped = all.slice(maxEntries);
-        for (let i = 0; i < dropped.length; i++)
-            dismissLive(dropped[i].key);
+        all.slice(maxEntries).forEach(e => dismissLive(e.key));
         entries = all.slice(0, maxEntries);
         persist();
         return key;
@@ -77,6 +80,7 @@ Singleton {
     function clearAll() {
         Object.keys(live).forEach(k => dismissLive(k));
         entries = [];
+        unread = 0;
         persist();
     }
 
@@ -100,27 +104,25 @@ Singleton {
     }
 
     function persist() {
-        saveTimer.restart();
+        store.save(JSON.stringify(entries));
     }
 
-    FileView {
-        id: store
-        path: root.path
-        blockLoading: true
-    }
-
-    Component.onCompleted: {
+    function restore(text) {
+        if (entries.length > 0)
+            return;
         try {
-            const saved = JSON.parse(store.text());
+            const saved = JSON.parse(text);
             if (Array.isArray(saved))
                 entries = saved;
         } catch (e) {
         }
     }
 
-    Timer {
-        id: saveTimer
-        interval: 800
-        onTriggered: Quickshell.execDetached(["sh", "-c", 'mkdir -p "$(dirname "$2")" && printf "%s" "$1" > "$2"', "sh", JSON.stringify(root.entries), root.path])
+    TextStore {
+        id: store
+        path: Quickshell.env("HOME") + "/.local/state/lelouch/notifications.json"
+        watch: false
+        delay: 800
+        onLoaded: text => root.restore(text)
     }
 }

@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// The command center: a drawer on the right edge with one tab per page.
+// The command center: a drawer on the right edge with three tabs (system, controls, connect).
 // The window is full height and never resizes; the card inside it is as tall as its page wants
 // (up to the full height), and everything outside the card is click-through.
 // The page keeps its own final size while the card grows around it, so nothing is re-laid out mid-animation.
@@ -13,33 +13,27 @@ PanelWindow {
     readonly property int drawerWidth: 700
     readonly property real maxCard: height > 0 ? height : 900
 
-    // Header, tab bar and padding around the page: 14 px of space above it and 14 px below
-    readonly property int chrome: 132
+    // Above the page: title, tab bar and their gaps (118). Below it: 24 px of space, like the top.
+    readonly property int topChrome: 118
+    readonly property int bottomPad: 24
+    readonly property int chrome: topChrome + bottomPad
+
+    // The page's final height. When the screen is too short, the page shrinks to fit.
+    readonly property real pageHeight: pageLoader.item ? Math.min(pageLoader.item.implicitHeight, maxCard - chrome) : 140
 
     // Where the card is heading (the card follows it with an animation)
-    readonly property real targetHeight: Math.min(maxCard, chrome + (pageLoader.item ? pageLoader.item.implicitHeight : 140))
+    readonly property real targetHeight: chrome + pageHeight
 
-    // Pages, in tab order
     readonly property var pages: [
         { id: "system", label: "SYSTEM" },
         { id: "controls", label: "CONTROLS" },
-        { id: "connect", label: "CONNECT" },
-        { id: "media", label: "MEDIA" },
-        { id: "agenda", label: "AGENDA" },
-        { id: "focus", label: "FOCUS" },
-        { id: "notes", label: "NOTES" },
-        { id: "alerts", label: "ALERTS" }
+        { id: "connect", label: "CONNECT" }
     ]
 
     readonly property var pageComponents: ({
         system: systemPage,
         controls: controlsPage,
-        connect: connectPage,
-        media: mediaPage,
-        agenda: agendaPage,
-        focus: focusPage,
-        notes: notesPage,
-        alerts: alertsPage
+        connect: connectPage
     })
 
     visible: Ui.centerOpen || card.x < drawerWidth
@@ -70,7 +64,7 @@ PanelWindow {
         target: "center"
 
         function toggle(): void {
-            Ui.centerOpen = !Ui.centerOpen;
+            Ui.toggleCenter(Ui.centerPage);
         }
     }
 
@@ -85,11 +79,6 @@ PanelWindow {
     Component { id: systemPage; SystemPage {} }
     Component { id: controlsPage; ControlsPage {} }
     Component { id: connectPage; ConnectPage {} }
-    Component { id: mediaPage; MediaPage {} }
-    Component { id: agendaPage; AgendaPage {} }
-    Component { id: focusPage; FocusPage {} }
-    Component { id: notesPage; NotesPage {} }
-    Component { id: alertsPage; AlertsPage {} }
 
     Item {
         anchors.fill: parent
@@ -119,20 +108,8 @@ PanelWindow {
 
             Behavior on opacity { NumberAnimation { duration: 180 } }
 
-            Chamfer {
+            CardFrame {
                 anchors.fill: parent
-                cut: 14
-                strokeColor: Theme.alpha(Theme.gold, 0.9)
-                fillTop: Theme.alpha(Theme.mix(Theme.bg, Theme.primary, 0.18), 0.96)
-                fillBottom: Theme.alpha(Theme.bg, 0.96)
-            }
-
-            Chamfer {
-                anchors.fill: parent
-                anchors.margins: 5
-                cut: 10
-                strokeColor: Theme.alpha(Theme.primary, 0.4)
-                fillTop: "transparent"
             }
 
             Item {
@@ -230,9 +207,9 @@ PanelWindow {
                                 text: tab.modelData.label
                                 color: tab.active ? Theme.onPrimary : Theme.alpha(Theme.fg, 0.85)
                                 font.family: Theme.mono
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.bold: true
-                                font.letterSpacing: 1.5
+                                font.letterSpacing: 2
                             }
 
                             MouseArea {
@@ -253,11 +230,11 @@ PanelWindow {
                 color: Theme.alpha(Theme.gold, 0.6)
             }
 
-            // The page area: 14 px below the hairline and 14 px above the bottom edge.
+            // The page area: 14 px below the hairline, and 24 px above the bottom edge.
             // It is clipped, so a growing card simply reveals the page.
             Item {
                 x: 24
-                y: 118
+                y: win.topChrome
                 width: parent.width - 48
                 height: parent.height - win.chrome
                 clip: true
@@ -265,9 +242,7 @@ PanelWindow {
                 Loader {
                     id: pageLoader
                     width: parent.width
-
-                    // The page's own height, not the animating card's
-                    height: item ? item.implicitHeight : 140
+                    height: win.pageHeight
 
                     active: Ui.centerOpen || card.x < win.drawerWidth
                     sourceComponent: win.pageComponents[Ui.centerPage] ?? systemPage

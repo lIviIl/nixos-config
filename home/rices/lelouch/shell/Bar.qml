@@ -28,6 +28,7 @@ Variants {
             cut: 10
         }
 
+        // Left: workspaces, what is playing (click: the media panel)
         Workspaces {
             id: workspaces
             anchors.left: parent.left
@@ -41,27 +42,55 @@ Variants {
             anchors.verticalCenter: parent.verticalCenter
         }
 
+        // Centre: the clock (click: the calendar), and the running timer
         ClockItem {
             id: clock
             anchors.centerIn: parent
         }
 
-        // The running timer, beside the clock
         FocusItem {
             anchors.left: clock.right
             anchors.leftMargin: 26
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        CenterButton {
+        // Right: status, then the four panels
+        Row {
+            id: buttons
             anchors.right: parent.right
             anchors.rightMargin: 14
             anchors.verticalCenter: parent.verticalCenter
+            spacing: 4
+
+            BarButton {
+                icon: "pencil"
+                active: Ui.popup === "notes"
+                onClicked: Ui.togglePopup("notes")
+            }
+
+            BarButton {
+                icon: "timer"
+                active: Ui.popup === "focus"
+                onClicked: Ui.togglePopup("focus")
+            }
+
+            BarButton {
+                icon: "bell"
+                active: Ui.popup === "alerts"
+                badge: History.unread
+                onClicked: Ui.togglePopup("alerts")
+            }
+
+            BarButton {
+                icon: "apps"
+                active: Ui.centerOpen
+                onClicked: Ui.toggleCenter(Ui.centerPage)
+            }
         }
 
         Status {
-            anchors.right: parent.right
-            anchors.rightMargin: 58
+            anchors.right: buttons.left
+            anchors.rightMargin: 16
             anchors.verticalCenter: parent.verticalCenter
         }
     }

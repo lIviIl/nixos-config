@@ -2,8 +2,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
-// A full-screen overlay with a centered chamfered card. Children go inside the card.
-// Opens with a quick scale-up and fade (0.05, 0.9, 0.1, 1.05 over 200 ms).
+// A full-screen overlay with a centered card (the launcher, the wallpaper picker, the scratchpad).
+// Children go inside the card. It opens with a quick scale-up and fade (0.05, 0.9, 0.1, 1.05 over 200 ms).
 PanelWindow {
     id: win
 
@@ -26,7 +26,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
-    // Light backdrop: click outside the card to close
+    // Light backdrop: click anywhere outside the card to close
     Rectangle {
         anchors.fill: parent
         color: Theme.alpha(Theme.bg, 0.25)
@@ -62,22 +62,8 @@ PanelWindow {
             }
         }
 
-        // Gold outer edge, with a faint primary-tinted glow at the top
-        Chamfer {
+        CardFrame {
             anchors.fill: parent
-            cut: 14
-            strokeColor: Theme.alpha(Theme.gold, 0.9)
-            fillTop: Theme.alpha(Theme.mix(Theme.bg, Theme.primary, 0.18), 0.95)
-            fillBottom: Theme.alpha(Theme.bg, 0.95)
-        }
-
-        // Inner highlight line in the primary color
-        Chamfer {
-            anchors.fill: parent
-            anchors.margins: 5
-            cut: 10
-            strokeColor: Theme.alpha(Theme.primary, 0.4)
-            fillTop: "transparent"
         }
 
         // Swallow clicks so they don't reach the backdrop

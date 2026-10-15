@@ -2,50 +2,28 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 
-// A drawing area with four theme colours, three pen sizes, an eraser and Clear.
-// It saves itself to ~/Sync/notes/whiteboard.png and reloads from it.
+// The whiteboard: four theme colours, three pen sizes, an eraser with its own three sizes, Undo, Export, Clear.
+// The drawing itself lives in Board, so it is still here after the window closes.
 ColumnLayout {
     id: board
 
-    property color pen: Theme.fg
-    property real penWidth: 3
+    property string pen: "fg"
     property bool erasing: false
-    property bool dirty: false
+    property int penSize: 1
+    property int eraserSize: 1
 
-    readonly property string dir: Quickshell.env("HOME") + "/Sync/notes"
-    readonly property string path: dir + "/whiteboard.png"
-    readonly property string fileUrl: "file://" + path
+    readonly property var roles: ["fg", "gold", "crimson", "primary"]
+    readonly property var penWidths: [2, 4, 8]
+    readonly property var eraserWidths: [10, 22, 44]
+    readonly property string exportPath: Quickshell.env("HOME") + "/Sync/notes/whiteboard.png"
 
-    Layout.fillWidth: true
     spacing: 8
 
-    function save() {
-        if (!dirty)
-            return;
-        dirty = false;
-        canvas.save(path);
-    }
-
-    function clear() {
-        canvas.clear();
-        dirty = true;
-        saveTimer.restart();
-    }
-
-    Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", board.dir])
-    Component.onDestruction: board.save()
-
-    Timer {
-        id: saveTimer
-        interval: 1200
-        onTriggered: board.save()
-    }
-
-    // The canvas is loaded from disk shortly after it has its final size
-    Timer {
-        interval: 150
-        running: true
-        onTriggered: canvas.loadImage(board.fileUrl)
+    function exportImage() {
+        drawArea.grabToImage(result => {
+            const ok = result.saveToFile(board.exportPath);
+            Quickshell.execDetached(["notify-send", "-a", "Whiteboard", ok ? "Whiteboard exported" : "Could not export the whiteboard", board.exportPath]);
+        });
     }
 
     // Toolbar
@@ -54,10 +32,13 @@ ColumnLayout {
         spacing: 8
 
         Repeater {
-            model: [Theme.fg, Theme.gold, Theme.crimson, Theme.primary]
+            model: board.roles
 
             Item {
-                required property color modelData
+                id: swatch
+
+                required property string modelData
+                readonly property bool selected: !board.erasing && board.pen === modelData
 
                 Layout.preferredWidth: 30
                 Layout.preferredHeight: 30
@@ -65,8 +46,8 @@ ColumnLayout {
                 Chamfer {
                     anchors.fill: parent
                     cut: 7
-                    strokeColor: !board.erasing && Qt.colorEqual(board.pen, parent.modelData) ? Theme.fg : Theme.alpha(Theme.gold, 0.5)
-                    strokeWidth: !board.erasing && Qt.colorEqual(board.pen, parent.modelData) ? 2 : 1
+                    strokeColor: swatch.selected ? Theme.fg : Theme.alpha(Theme.gold, 0.5)
+                    strokeWidth: swatch.selected ? 2 : 1
                     fillTop: "transparent"
                 }
 
@@ -75,12 +56,12 @@ ColumnLayout {
                     width: 12
                     height: 12
                     rotation: 45
-                    color: parent.modelData
+                    color: Theme[swatch.modelData]
                 }
 
                 TapHandler {
                     onTapped: {
-                        board.pen = parent.modelData;
+                        board.pen = swatch.modelData;
                         board.erasing = false;
                     }
                 }
@@ -97,11 +78,16 @@ ColumnLayout {
             color: Theme.alpha(Theme.gold, 0.45)
         }
 
+        // Sizes: the pen's, or the eraser's while erasing
         Repeater {
-            model: [2, 4, 8]
+            model: board.erasing ? board.eraserWidths : board.penWidths
 
             Item {
-                required property real modelData
+                id: size
+
+                required property int index
+                required property int modelData
+                readonly property bool selected: board.erasing ? board.eraserSize === index : board.penSize === index
 
                 Layout.preferredWidth: 30
                 Layout.preferredHeight: 30
@@ -109,23 +95,27 @@ ColumnLayout {
                 Chamfer {
                     anchors.fill: parent
                     cut: 7
-                    strokeColor: !board.erasing && board.penWidth === parent.modelData ? Theme.fg : Theme.alpha(Theme.gold, 0.5)
-                    strokeWidth: !board.erasing && board.penWidth === parent.modelData ? 2 : 1
+                    strokeColor: size.selected ? Theme.fg : Theme.alpha(Theme.gold, 0.5)
+                    strokeWidth: size.selected ? 2 : 1
                     fillTop: "transparent"
                 }
 
                 Rectangle {
                     anchors.centerIn: parent
-                    width: 14
-                    height: parent.modelData
-                    radius: parent.modelData / 2
-                    color: Theme.fg
+                    width: board.erasing ? Math.max(6, size.modelData * 0.4) : 14
+                    height: board.erasing ? width : size.modelData
+                    radius: board.erasing ? 0 : size.modelData / 2
+                    color: board.erasing ? "transparent" : Theme.fg
+                    border.width: board.erasing ? 1.5 : 0
+                    border.color: Theme.fg
                 }
 
                 TapHandler {
                     onTapped: {
-                        board.penWidth = parent.modelData;
-                        board.erasing = false;
+                        if (board.erasing)
+                            board.eraserSize = size.index;
+                        else
+                            board.penSize = size.index;
                     }
                 }
 
@@ -141,6 +131,13 @@ ColumnLayout {
 
         ActionButton {
             Layout.preferredHeight: 30
+            label: "UNDO"
+            enabled: Board.count > 0
+            onClicked: Board.undo()
+        }
+
+        ActionButton {
+            Layout.preferredHeight: 30
             label: "ERASER"
             active: board.erasing
             onClicked: board.erasing = !board.erasing
@@ -148,17 +145,26 @@ ColumnLayout {
 
         ActionButton {
             Layout.preferredHeight: 30
+            label: "EXPORT"
+            onClicked: board.exportImage()
+        }
+
+        ActionButton {
+            Layout.preferredHeight: 30
             label: "CLEAR"
             danger: true
             needsConfirm: true
-            onClicked: board.clear()
+            enabled: Board.count > 0
+            onClicked: Board.clear()
         }
     }
 
     // The drawing area
     Item {
+        id: drawArea
         Layout.fillWidth: true
-        Layout.preferredHeight: 280
+        Layout.fillHeight: true
+        Layout.minimumHeight: 200
 
         Chamfer {
             anchors.fill: parent
@@ -172,59 +178,77 @@ ColumnLayout {
             anchors.fill: parent
             anchors.margins: 6
 
-            property var segments: []
-            property bool restore: false
+            property bool full: true            // redraw every stroke on the next paint
+            property var pending: []            // segments drawn since the last paint
             property real lastX: 0
             property real lastY: 0
+            property string curRole: "fg"
+            property real curWidth: 4
+            property bool curErase: false
 
-            function addSegment(x0, y0, x1, y1) {
-                segments.push({
-                    x0: x0,
-                    y0: y0,
-                    x1: x1,
-                    y1: y1,
-                    color: board.pen,
-                    width: board.erasing ? 18 : board.penWidth,
-                    erase: board.erasing
-                });
+            function setStyle(ctx, role, width, erase) {
+                ctx.globalCompositeOperation = erase ? "destination-out" : "source-over";
+                ctx.strokeStyle = erase ? "rgba(0, 0, 0, 1)" : Theme[role];
+                ctx.lineWidth = width;
+            }
+
+            function segment(x0, y0, x1, y1) {
+                pending.push({ x0: x0, y0: y0, x1: x1, y1: y1, role: curRole, w: curWidth, erase: curErase });
                 requestPaint();
             }
 
-            function clear() {
-                const ctx = getContext("2d");
-                ctx.clearRect(0, 0, width, height);
-                segments = [];
+            onWidthChanged: {
+                full = true;
                 requestPaint();
             }
 
-            onImageLoaded: {
-                restore = true;
+            onHeightChanged: {
+                full = true;
                 requestPaint();
+            }
+
+            Component.onCompleted: requestPaint()
+
+            Connections {
+                target: Board
+
+                function onRevisionChanged() {
+                    canvas.full = true;
+                    canvas.requestPaint();
+                }
             }
 
             onPaint: {
                 const ctx = getContext("2d");
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
 
-                if (restore && isImageLoaded(board.fileUrl)) {
-                    ctx.drawImage(board.fileUrl, 0, 0);
-                    restore = false;
+                if (full) {
+                    ctx.clearRect(0, 0, width, height);
+                    for (let i = 0; i < Board.strokes.length; i++) {
+                        const s = Board.strokes[i];
+                        setStyle(ctx, s.c, s.w, s.e);
+                        ctx.beginPath();
+                        ctx.moveTo(s.p[0] * width, s.p[1] * height);
+                        if (s.p.length === 2)
+                            ctx.lineTo(s.p[0] * width + 0.1, s.p[1] * height + 0.1);
+                        for (let j = 2; j < s.p.length; j += 2)
+                            ctx.lineTo(s.p[j] * width, s.p[j + 1] * height);
+                        ctx.stroke();
+                    }
+                    full = false;
                 }
 
-                for (let i = 0; i < segments.length; i++) {
-                    const s = segments[i];
-                    ctx.globalCompositeOperation = s.erase ? "destination-out" : "source-over";
-                    ctx.strokeStyle = s.erase ? "rgba(0, 0, 0, 1)" : s.color;
-                    ctx.lineWidth = s.width;
-                    ctx.lineCap = "round";
-                    ctx.lineJoin = "round";
+                for (let k = 0; k < pending.length; k++) {
+                    const g = pending[k];
+                    setStyle(ctx, g.role, g.w, g.erase);
                     ctx.beginPath();
-                    ctx.moveTo(s.x0, s.y0);
-                    ctx.lineTo(s.x1, s.y1);
+                    ctx.moveTo(g.x0, g.y0);
+                    ctx.lineTo(g.x1, g.y1);
                     ctx.stroke();
                 }
-
+                pending = [];
                 ctx.globalCompositeOperation = "source-over";
-                segments = [];
             }
         }
 
@@ -234,21 +258,27 @@ ColumnLayout {
             cursorShape: Qt.CrossCursor
 
             onPressed: mouse => {
+                canvas.curRole = board.pen;
+                canvas.curErase = board.erasing;
+                canvas.curWidth = board.erasing ? board.eraserWidths[board.eraserSize] : board.penWidths[board.penSize];
                 canvas.lastX = mouse.x;
                 canvas.lastY = mouse.y;
-                canvas.addSegment(mouse.x, mouse.y, mouse.x + 0.1, mouse.y + 0.1);
-                board.dirty = true;
+                Board.begin(canvas.curRole, canvas.curWidth, canvas.curErase, mouse.x / canvas.width, mouse.y / canvas.height);
+                canvas.segment(mouse.x, mouse.y, mouse.x + 0.1, mouse.y + 0.1);
             }
 
             onPositionChanged: mouse => {
-                if (pressed) {
-                    canvas.addSegment(canvas.lastX, canvas.lastY, mouse.x, mouse.y);
-                    canvas.lastX = mouse.x;
-                    canvas.lastY = mouse.y;
-                }
+                if (!pressed)
+                    return;
+                if (Math.abs(mouse.x - canvas.lastX) + Math.abs(mouse.y - canvas.lastY) < 1)
+                    return;
+                Board.extend(mouse.x / canvas.width, mouse.y / canvas.height);
+                canvas.segment(canvas.lastX, canvas.lastY, mouse.x, mouse.y);
+                canvas.lastX = mouse.x;
+                canvas.lastY = mouse.y;
             }
 
-            onReleased: saveTimer.restart()
+            onReleased: Board.end()
         }
     }
 }

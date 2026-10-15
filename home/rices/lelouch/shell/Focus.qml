@@ -3,7 +3,8 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// A Pomodoro timer, a countdown timer and a stopwatch. It keeps running with the drawer closed.
+// A Pomodoro timer, a countdown timer and a stopwatch. It keeps running with every window closed.
+// Lengths are in seconds. The state resets when the shell restarts.
 Singleton {
     id: root
 
@@ -14,27 +15,37 @@ Singleton {
     property real endAt: 0
     property real startedAt: 0
 
-    property int workMin: 25
-    property int shortMin: 5
-    property int longMin: 15
-    property int timerMin: 10
+    property int workSec: 25 * 60
+    property int shortSec: 5 * 60
+    property int longSec: 15 * 60
+    property int timerSec: 10 * 60
+
     property bool autoStart: true
+    property bool sound: true
     property int completed: 0               // focus sessions finished so far
 
-    property real pausedLeft: 25 * 60000
-    property real pausedElapsed: 0
+    property real pausedLeft: 0             // ms
+    property real pausedElapsed: 0          // ms
 
     readonly property bool countdown: mode !== "stopwatch"
-    readonly property real total: mode === "timer" ? timerMin * 60000 : phaseMs(phase)
+    readonly property real total: (mode === "timer" ? timerSec : phaseSec(phase)) * 1000
     readonly property real left: running ? Math.max(0, endAt - now) : pausedLeft
     readonly property real elapsed: running ? pausedElapsed + (now - startedAt) : pausedElapsed
     readonly property real shown: countdown ? left : elapsed
     readonly property real fraction: countdown ? (total > 0 ? 1 - left / total : 0) : (elapsed % 60000) / 60000
     readonly property bool active: running || (countdown ? pausedLeft < total : pausedElapsed > 0)
-    readonly property int cycleCount: phase === "long" && completed > 0 ? 4 : completed % 4
+    readonly property int cycleCount: phase === "long" ? 4 : completed % 4
 
-    function phaseMs(p) {
-        return (p === "work" ? workMin : (p === "short" ? shortMin : longMin)) * 60000;
+    readonly property string title: mode === "pomodoro" ? "POMODORO" : (mode === "timer" ? "TIMER" : "STOPWATCH")
+    readonly property string phaseLabel: mode !== "pomodoro" ? "" : (phase === "work" ? "FOCUS" : (phase === "short" ? "SHORT BREAK" : "LONG BREAK"))
+
+    function phaseSec(p) {
+        return p === "work" ? workSec : (p === "short" ? shortSec : longSec);
+    }
+
+    function chime(kind) {
+        if (sound)
+            Quickshell.execDetached(["lelouch-chime", kind]);
     }
 
     function notify(title, body) {
@@ -85,7 +96,7 @@ Singleton {
             start();
     }
 
-    // Skip to the other kind of phase without counting it
+    // Move to the other kind of phase without counting the session
     function skip() {
         if (mode !== "pomodoro")
             return;
@@ -100,9 +111,11 @@ Singleton {
                 const long = completed % 4 === 0;
                 phase = long ? "long" : "short";
                 notify("Focus session complete", long ? "Take a long break." : "Take a short break.");
+                chime("done");
             } else {
                 phase = "work";
                 notify("Break over", "Back to focus.");
+                chime("break");
             }
             pausedLeft = total;
             if (autoStart)
@@ -110,30 +123,29 @@ Singleton {
             else
                 running = false;
         } else if (mode === "timer") {
-            notify("Timer finished", timerMin + " minutes are up.");
+            notify("Timer finished", Fmt.hms(timerSec) + " is up.");
+            chime("alarm");
             running = false;
             pausedLeft = total;
         }
     }
 
-    function adjust(which, delta) {
+    // Set the length of one of: work, short, long, timer (in seconds)
+    function setLength(which, seconds) {
+        const s = Math.max(5, Math.min(12 * 3600, Math.round(seconds)));
         if (which === "work")
-            workMin = Math.max(1, Math.min(120, workMin + delta));
+            workSec = s;
         else if (which === "short")
-            shortMin = Math.max(1, Math.min(60, shortMin + delta));
+            shortSec = s;
         else if (which === "long")
-            longMin = Math.max(1, Math.min(90, longMin + delta));
+            longSec = s;
         else if (which === "timer")
-            timerMin = Math.max(1, Math.min(720, timerMin + delta));
+            timerSec = s;
         if (!running)
             pausedLeft = total;
     }
 
-    function setTimerMinutes(m) {
-        timerMin = m;
-        if (!running)
-            pausedLeft = total;
-    }
+    Component.onCompleted: pausedLeft = total
 
     Timer {
         interval: 200

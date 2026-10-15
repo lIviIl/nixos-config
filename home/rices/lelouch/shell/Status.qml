@@ -79,7 +79,7 @@ Row {
         level: root.volume
         muted: root.muted
 
-        onClicked: Ui.volumeOpen = !Ui.volumeOpen
+        onClicked: Ui.toggleVolume()
         onRightClicked: Ui.toggleCenter("controls")
         onScrolled: direction => AudioCtl.step(root.sink, direction)
     }
