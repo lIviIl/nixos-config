@@ -42,7 +42,15 @@ Variants {
         }
 
         ClockItem {
+            id: clock
             anchors.centerIn: parent
+        }
+
+        // The running timer, beside the clock
+        FocusItem {
+            anchors.left: clock.right
+            anchors.leftMargin: 26
+            anchors.verticalCenter: parent.verticalCenter
         }
 
         CenterButton {

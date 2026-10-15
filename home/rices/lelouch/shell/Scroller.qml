@@ -2,16 +2,18 @@ import QtQuick
 import QtQuick.Layouts
 
 // A vertical list that grows with its contents up to maxHeight, then scrolls
-// (mouse wheel or drag). A thin gold bar shows when there is more.
+// (mouse wheel or drag). With fixedHeight set it always takes exactly that height.
+// A thin gold bar shows when there is more.
 Item {
     id: scroller
 
     property real maxHeight: 240
+    property real fixedHeight: -1
     default property alias content: inner.data
     readonly property bool overflowing: flick.contentHeight > flick.height + 1
 
     Layout.fillWidth: true
-    implicitHeight: Math.min(inner.implicitHeight, maxHeight)
+    implicitHeight: fixedHeight >= 0 ? fixedHeight : Math.min(inner.implicitHeight, maxHeight)
     Layout.preferredHeight: implicitHeight
 
     Flickable {

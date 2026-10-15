@@ -353,6 +353,32 @@ Canvas {
             ctx.lineTo(8, 12);
             ctx.lineTo(13, 6);
             ctx.stroke();
+        } else if (kind === "timer") {
+            ctx.beginPath();
+            ctx.arc(9, 10.2, 6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillRect(7.2, 1.4, 3.6, 2);
+            ctx.beginPath();
+            ctx.moveTo(9, 10.2);
+            ctx.lineTo(9, 6.6);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(14, 4.4);
+            ctx.lineTo(15.4, 5.8);
+            ctx.stroke();
+        } else if (kind === "pencil") {
+            ctx.beginPath();
+            ctx.moveTo(3, 15);
+            ctx.lineTo(3.8, 11.4);
+            ctx.lineTo(12, 3.2);
+            ctx.lineTo(14.8, 6);
+            ctx.lineTo(6.6, 14.2);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(10.6, 4.6);
+            ctx.lineTo(13.4, 7.4);
+            ctx.stroke();
         } else if (kind === "keyboard") {
             ctx.strokeRect(1.5, 4.5, 15, 9);
             ctx.fillRect(4, 6.8, 2, 1.8);

@@ -13,8 +13,8 @@ PanelWindow {
     readonly property int drawerWidth: 700
     readonly property real maxCard: height > 0 ? height : 900
 
-    // Header, tab bar and padding around the page
-    readonly property int chrome: 130
+    // Header, tab bar and padding around the page: 14 px of space above it and 14 px below
+    readonly property int chrome: 132
 
     // Where the card is heading (the card follows it with an animation)
     readonly property real targetHeight: Math.min(maxCard, chrome + (pageLoader.item ? pageLoader.item.implicitHeight : 140))
@@ -26,6 +26,8 @@ PanelWindow {
         { id: "connect", label: "CONNECT" },
         { id: "media", label: "MEDIA" },
         { id: "agenda", label: "AGENDA" },
+        { id: "focus", label: "FOCUS" },
+        { id: "notes", label: "NOTES" },
         { id: "alerts", label: "ALERTS" }
     ]
 
@@ -35,6 +37,8 @@ PanelWindow {
         connect: connectPage,
         media: mediaPage,
         agenda: agendaPage,
+        focus: focusPage,
+        notes: notesPage,
         alerts: alertsPage
     })
 
@@ -83,6 +87,8 @@ PanelWindow {
     Component { id: connectPage; ConnectPage {} }
     Component { id: mediaPage; MediaPage {} }
     Component { id: agendaPage; AgendaPage {} }
+    Component { id: focusPage; FocusPage {} }
+    Component { id: notesPage; NotesPage {} }
     Component { id: alertsPage; AlertsPage {} }
 
     Item {
@@ -224,9 +230,9 @@ PanelWindow {
                                 text: tab.modelData.label
                                 color: tab.active ? Theme.onPrimary : Theme.alpha(Theme.fg, 0.85)
                                 font.family: Theme.mono
-                                font.pixelSize: 12
+                                font.pixelSize: 11
                                 font.bold: true
-                                font.letterSpacing: 2
+                                font.letterSpacing: 1.5
                             }
 
                             MouseArea {
@@ -247,12 +253,13 @@ PanelWindow {
                 color: Theme.alpha(Theme.gold, 0.6)
             }
 
-            // The page area: clipped, so a growing card simply reveals the page
+            // The page area: 14 px below the hairline and 14 px above the bottom edge.
+            // It is clipped, so a growing card simply reveals the page.
             Item {
                 x: 24
-                y: 116
+                y: 118
                 width: parent.width - 48
-                height: parent.height - win.chrome + 14
+                height: parent.height - win.chrome
                 clip: true
 
                 Loader {

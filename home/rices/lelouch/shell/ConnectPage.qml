@@ -214,21 +214,24 @@ Item {
                 wrapMode: Text.Wrap
             }
 
-            Text {
-                visible: Net.radioOn && page.networks.length === 0
-                Layout.fillWidth: true
-                text: "No networks found"
-                color: Theme.alpha(Theme.fg, 0.7)
-                font.family: Theme.mono
-                font.pixelSize: 12
-            }
-
             SectionLabel { text: "AVAILABLE NETWORKS"; visible: Net.radioOn && page.networks.length > 0 }
 
-            // About six networks fit; the rest scroll
+            // Always the same height while Wi-Fi is on: about six networks, the rest scroll
             Scroller {
-                visible: Net.radioOn && page.networks.length > 0
-                maxHeight: 250
+                visible: Net.radioOn
+                fixedHeight: 250
+
+                Text {
+                    visible: page.networks.length === 0
+                    width: parent.width
+                    height: 60
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: "Searching for networks..."
+                    color: Theme.alpha(Theme.fg, 0.6)
+                    font.family: Theme.mono
+                    font.pixelSize: 12
+                }
 
                 Repeater {
                     model: Net.radioOn ? page.networks : []
@@ -327,10 +330,23 @@ Item {
 
             SectionLabel { text: "DEVICES"; visible: page.btDevices.length > 0 }
 
-            // Two or three devices fit; the rest scroll
+            // Always the same height while Bluetooth is on: two or three devices, the rest scroll
             Scroller {
-                visible: page.btDevices.length > 0
-                maxHeight: 250
+                visible: !!page.adapter && page.adapter.enabled
+                fixedHeight: 150
+
+                Text {
+                    visible: page.btDevices.length === 0
+                    width: parent.width
+                    height: 60
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.Wrap
+                    text: "No devices yet. Turn on Scan, with the device in pairing mode."
+                    color: Theme.alpha(Theme.fg, 0.6)
+                    font.family: Theme.mono
+                    font.pixelSize: 12
+                }
 
                 Repeater {
                     model: page.btDevices

@@ -11,6 +11,8 @@ Singleton {
     property string typedText: ""        // never displayed; only its length drives the sigil
     readonly property int typed: typedText.length
     property bool granted: false
+    property bool exiting: false
+    property bool shotReady: false
     property bool busy: false
     property int failPulse: 0            // incremented on every rejected attempt
     property string status: "STATE YOUR WILL"

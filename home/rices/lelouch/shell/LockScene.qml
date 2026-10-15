@@ -445,10 +445,46 @@ Item {
         opacity: scene.failFlash
     }
 
+    // The desktop as it looked when the lock engaged, so the exit can fade into it
+    property string outputName: ""
+    property real exit: 0
+
+    Image {
+        id: shot
+        anchors.fill: parent
+        source: scene.outputName !== "" ? "file://" + Quickshell.env("HOME") + "/.cache/lelouch/lockshot-" + scene.outputName + ".jpg" : ""
+        cache: false
+        opacity: scene.exit
+        visible: opacity > 0
+
+        onStatusChanged: {
+            if (status === Image.Ready)
+                LockState.shotReady = true;
+        }
+    }
+
+    NumberAnimation {
+        id: exitAnim
+        target: scene
+        property: "exit"
+        to: 1
+        duration: 700
+        easing.type: Easing.InOutQuad
+    }
+
+    Connections {
+        target: LockState
+
+        function onExitingChanged() {
+            if (LockState.exiting)
+                exitAnim.restart();
+        }
+    }
+
     // Success: the whole screen goes solid red as the emblem arrives
     Rectangle {
         anchors.fill: parent
         color: Theme.crimson
-        opacity: scene.redFill
+        opacity: scene.redFill * (1 - scene.exit)
     }
 }

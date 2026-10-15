@@ -5,19 +5,49 @@ import Quickshell.Wayland
 import Quickshell.Services.Pam
 
 // The lock screen: a Wayland session lock whose surfaces are drawn by LockScene,
-// authenticated through PAM, with the red fade-out in Veil.
+// authenticated through PAM. A screenshot of the desktop is taken just before locking,
+// so the exit can fade from red into it and only then unlock, with no gap.
 Scope {
     id: root
 
+    property bool pendingLock: false
+
     function lock() {
-        if (lockSession.locked || veil.open)
+        if (lockSession.locked || pendingLock)
             return;
         LockState.typedText = "";
         LockState.granted = false;
         LockState.busy = false;
+        LockState.exiting = false;
+        LockState.shotReady = false;
         LockState.status = "STATE YOUR WILL";
         LockState.locked = true;
+        pendingLock = true;
+
+        // One screenshot per screen; lock when they are done, or after a short wait
+        const names = Array.from(Quickshell.screens).map(s => s.name);
+        shotProc.command = ["sh", "-c", 'mkdir -p "$HOME/.cache/lelouch"; for o in "$@"; do grim -t jpeg -q 85 -o "$o" "$HOME/.cache/lelouch/lockshot-$o.jpg" & done; wait', "sh"].concat(names);
+        shotProc.running = true;
+        shotTimeout.restart();
+    }
+
+    function engage() {
+        if (!pendingLock)
+            return;
+        pendingLock = false;
+        shotTimeout.stop();
         lockSession.locked = true;
+    }
+
+    // Everything is put back to rest, and the screenshot is deleted
+    function release() {
+        lockSession.locked = false;
+        LockState.locked = false;
+        LockState.granted = false;
+        LockState.exiting = false;
+        LockState.shotReady = false;
+        LockState.typedText = "";
+        Quickshell.execDetached(["sh", "-c", 'rm -f "$HOME"/.cache/lelouch/lockshot-*.jpg']);
     }
 
     function submit() {
@@ -31,7 +61,7 @@ Scope {
     function grant() {
         LockState.granted = true;
         LockState.status = "COMMAND ACCEPTED";
-        toVeil.start();
+        toExit.start();
     }
 
     function handleKey(event) {
@@ -57,25 +87,36 @@ Scope {
         }
     }
 
-    // Success: the emblem flies in until the screen is solid red, the veil takes over,
-    // the session unlocks underneath it, then the red fades into the desktop.
+    Process {
+        id: shotProc
+        onExited: root.engage()
+    }
+
     Timer {
-        id: toVeil
+        id: shotTimeout
+        interval: 600
+        onTriggered: root.engage()
+    }
+
+    // Success: the emblem flies in until the screen is solid red, then the red fades into the
+    // screenshot of the desktop, and only then does the session unlock.
+    Timer {
+        id: toExit
         interval: 520
         onTriggered: {
-            veil.open = true;
-            toUnlock.start();
+            if (LockState.shotReady) {
+                LockState.exiting = true;
+                toRelease.interval = 760;
+            } else {
+                toRelease.interval = 40;
+            }
+            toRelease.start();
         }
     }
 
     Timer {
-        id: toUnlock
-        interval: 160
-        onTriggered: {
-            lockSession.locked = false;
-            LockState.locked = false;
-            veil.play();
-        }
+        id: toRelease
+        onTriggered: root.release()
     }
 
     Timer {
@@ -109,23 +150,17 @@ Scope {
         }
     }
 
-    Veil {
-        id: veil
-
-        onFinished: {
-            LockState.granted = false;
-            LockState.typedText = "";
-        }
-    }
-
     WlSessionLock {
         id: lockSession
         locked: false
 
         WlSessionLockSurface {
+            id: surface
+
             // The cursor is tracked inside the scene (for the parallax)
             LockScene {
                 anchors.fill: parent
+                outputName: surface.screen ? surface.screen.name : ""
             }
 
             // Keyboard: there is no input box, the emblem is the feedback
