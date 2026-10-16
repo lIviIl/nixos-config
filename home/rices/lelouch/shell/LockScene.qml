@@ -232,8 +232,8 @@ Item {
                     Scale {
                         origin.x: scene.zoomX
                         origin.y: scene.zoomY
-                        xScale: 1 + 20 * scene.blaze
-                        yScale: 1 + 20 * scene.blaze
+                        xScale: 1 + 50 * scene.blaze
+                        yScale: 1 + 50 * scene.blaze
                     },
                     Translate {
                         x: (content.width / 2 - scene.zoomX) * scene.blaze
