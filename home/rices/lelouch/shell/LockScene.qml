@@ -34,7 +34,7 @@ Item {
 
     // The zoom aims at the solid base of the emblem (below the notch)
     readonly property real zoomX: sigil.x + sigil.width / 2
-    readonly property real zoomY: sigil.y + sigil.height / 2 + 145 * sigil.k
+    readonly property real zoomY: sigil.y + sigil.height / 2 + 200 * sigil.k
 
     HoverHandler {
         onPointChanged: {
@@ -232,8 +232,8 @@ Item {
                     Scale {
                         origin.x: scene.zoomX
                         origin.y: scene.zoomY
-                        xScale: 1 + 14 * scene.blaze
-                        yScale: 1 + 14 * scene.blaze
+                        xScale: 1 + 20 * scene.blaze
+                        yScale: 1 + 20 * scene.blaze
                     },
                     Translate {
                         x: (content.width / 2 - scene.zoomX) * scene.blaze
