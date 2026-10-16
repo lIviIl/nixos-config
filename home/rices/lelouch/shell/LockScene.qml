@@ -34,7 +34,7 @@ Item {
 
     // The zoom aims at the solid base of the emblem (below the notch)
     readonly property real zoomX: sigil.x + sigil.width / 2
-    readonly property real zoomY: sigil.y + sigil.height / 2 + 200 * sigil.k
+    readonly property real zoomY: sigil.y + sigil.height / 2 + 500 * sigil.k
 
     HoverHandler {
         onPointChanged: {
