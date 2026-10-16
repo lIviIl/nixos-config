@@ -4,8 +4,9 @@ import Quickshell.Io
 import Quickshell.Wayland
 
 // A panel that drops down from the bar. Its window starts just below the bar and covers the rest of the screen
-// invisibly, so a click outside closes it while the bar stays clickable. The page inside is loaded only while
-// the panel is on screen, and the card is exactly as tall as the page wants (up to the screen).
+// invisibly, but it takes input only inside its card, so the desktop (and the bar) stay usable while it is open.
+// Close it with Esc, the CLOSE label, or its bar button. The page inside is loaded only while the panel is on
+// screen, and the card is exactly as tall as the page wants (up to the screen).
 PanelWindow {
     id: win
 
@@ -20,11 +21,16 @@ PanelWindow {
     readonly property int padSide: 20
     readonly property real maxCard: Math.max(200, height - 4 - 12)
     readonly property real wanted: padTop + padBottom + (loader.item ? loader.item.implicitHeight : 120)
+    readonly property real finalHeight: Math.min(wanted, maxCard)
+    readonly property real cardX: place === "left" ? 12 : (place === "right" ? width - cardWidth - 12 : Math.round((width - cardWidth) / 2))
 
     visible: open || card.opacity > 0.01
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     margins.top: 52
+
+    // Input only where the card will be
+    mask: Region { item: hitbox }
 
     anchors {
         top: true
@@ -44,16 +50,19 @@ PanelWindow {
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        onClicked: Ui.popup = ""
+    Item {
+        id: hitbox
+        x: win.cardX
+        y: 4
+        width: win.cardWidth
+        height: win.finalHeight
     }
 
     Item {
         id: card
         width: win.cardWidth
-        height: Math.min(win.wanted, win.maxCard)
-        x: win.place === "left" ? 12 : (win.place === "right" ? win.width - width - 12 : Math.round((win.width - width) / 2))
+        height: win.finalHeight
+        x: win.cardX
         y: 4 + (win.open ? 0 : -24)
         opacity: win.open ? 1 : 0
 
@@ -77,11 +86,6 @@ PanelWindow {
             anchors.fill: parent
         }
 
-        // Swallow clicks so they don't reach the backdrop
-        MouseArea {
-            anchors.fill: parent
-        }
-
         Item {
             focus: true
             Keys.onEscapePressed: Ui.popup = ""
@@ -100,6 +104,24 @@ PanelWindow {
                 height: item ? Math.min(item.implicitHeight, win.maxCard - win.padTop - win.padBottom) : 120
                 active: win.visible
                 sourceComponent: win.page
+            }
+        }
+
+        Text {
+            x: parent.width - width - 26
+            y: 4
+            text: "CLOSE"
+            color: Theme.alpha(Theme.fg, 0.6)
+            font.family: Theme.mono
+            font.pixelSize: 10
+            font.bold: true
+            font.letterSpacing: 2
+
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -6
+                cursorShape: Qt.PointingHandCursor
+                onClicked: Ui.popup = ""
             }
         }
     }

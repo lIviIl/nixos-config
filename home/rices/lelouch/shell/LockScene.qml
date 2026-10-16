@@ -454,6 +454,7 @@ Item {
         anchors.fill: parent
         source: scene.outputName !== "" ? "file://" + Quickshell.env("HOME") + "/.cache/lelouch/lockshot-" + scene.outputName + ".jpg" : ""
         cache: false
+        z: 10
         opacity: scene.exit
         visible: opacity > 0
 
@@ -485,6 +486,6 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: Theme.crimson
-        opacity: scene.redFill * (1 - scene.exit)
+        opacity: scene.redFill
     }
 }

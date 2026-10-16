@@ -11,7 +11,6 @@ Item {
         anchors.fill: parent
         spacing: 12
 
-        // ---------------- NOW PLAYING ----------------
         SectionCard {
             icon: "note"
             title: "NOW PLAYING"
@@ -94,6 +93,14 @@ Item {
                 elide: Text.ElideRight
             }
 
+            // The spectrum, part of the card (it only runs while something plays)
+            Visualizer {
+                visible: Media.present
+                Layout.fillWidth: true
+                Layout.preferredHeight: 48
+                active: Media.playing
+            }
+
             // Seek bar
             Item {
                 visible: Media.present
@@ -159,20 +166,6 @@ Item {
                         onClicked: Media.next()
                     }
                 }
-            }
-        }
-
-        // ---------------- SPECTRUM (only while there is a player) ----------------
-        SectionCard {
-            visible: Media.present
-            icon: "speaker"
-            title: "SPECTRUM"
-            subtitle: Media.playing ? "LIVE" : ""
-
-            Visualizer {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 100
-                active: Media.playing
             }
         }
     }
