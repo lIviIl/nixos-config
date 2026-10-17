@@ -1,12 +1,11 @@
 import QtQuick
 
-// Title and artist of what is playing. Clipped; while hovered the text scrolls through.
-// Left click opens the Media tab, right click plays or pauses.
+// Title and artist of what is playing, clipped to a fixed width. If the text doesn't fit, it scrolls through
+// by itself every few seconds while music plays. Left click opens the media panel, right click plays or pauses.
 Item {
     id: root
 
     readonly property int maxWidth: 280
-    readonly property bool hovered: hover.hovered
     readonly property real overflow: Math.max(0, label.implicitWidth - maxWidth)
 
     visible: Media.present && Media.title !== ""
@@ -29,8 +28,6 @@ Item {
         Text {
             id: label
             anchors.verticalCenter: parent.verticalCenter
-            width: root.hovered ? implicitWidth : parent.width
-            elide: root.hovered ? Text.ElideNone : Text.ElideRight
             text: Media.title + (Media.artist !== "" ? "  —  " + Media.artist : "")
             color: Theme.fg
             font.family: Theme.mono
@@ -39,13 +36,13 @@ Item {
         }
 
         SequentialAnimation {
-            running: root.hovered && root.overflow > 0
+            running: root.overflow > 0 && Media.playing
             loops: Animation.Infinite
 
-            PauseAnimation { duration: 500 }
-            NumberAnimation { target: label; property: "x"; to: -root.overflow; duration: Math.max(600, root.overflow * 28) }
-            PauseAnimation { duration: 800 }
-            NumberAnimation { target: label; property: "x"; to: 0; duration: 350; easing.type: Easing.OutCubic }
+            PauseAnimation { duration: 2500 }
+            NumberAnimation { target: label; property: "x"; to: -root.overflow; duration: Math.max(800, root.overflow * 30) }
+            PauseAnimation { duration: 1500 }
+            NumberAnimation { target: label; property: "x"; to: 0; duration: 400; easing.type: Easing.OutCubic }
 
             onRunningChanged: {
                 if (!running)
@@ -54,19 +51,16 @@ Item {
         }
     }
 
-    // Hover and clicks are separate handlers, so a click never disturbs the hover state
-    HoverHandler {
-        id: hover
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-    }
 
-    TapHandler {
-        acceptedButtons: Qt.LeftButton
-        onTapped: Ui.togglePopup("media")
-    }
-
-    TapHandler {
-        acceptedButtons: Qt.RightButton
-        onTapped: Media.toggle()
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton)
+                Media.toggle();
+            else
+                Ui.togglePopup("media");
+        }
     }
 }

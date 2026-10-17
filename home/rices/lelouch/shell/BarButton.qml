@@ -1,6 +1,7 @@
 import QtQuick
 
 // An icon-only button for the bar, with an optional marker for unread items and an active state.
+// It uses a plain press/release area with no hover tracking: hover handlers made bar clicks unreliable.
 Item {
     id: button
 
@@ -17,8 +18,8 @@ Item {
     Chamfer {
         anchors.fill: parent
         cut: 5
-        strokeColor: button.active ? Theme.gold : (hover.hovered ? Theme.alpha(Theme.gold, 0.6) : "transparent")
-        fillTop: button.active ? Theme.alpha(Theme.primary, 0.3) : (hover.hovered ? Theme.alpha(Theme.fg, 0.08) : "transparent")
+        strokeColor: button.active ? Theme.gold : (area.pressed ? Theme.alpha(Theme.gold, 0.6) : "transparent")
+        fillTop: button.active ? Theme.alpha(Theme.primary, 0.3) : (area.pressed ? Theme.alpha(Theme.fg, 0.1) : "transparent")
     }
 
     Glyph {
@@ -38,18 +39,17 @@ Item {
         anchors.margins: 3
     }
 
-    HoverHandler {
-        id: hover
+    MouseArea {
+        id: area
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-    }
 
-    TapHandler {
-        acceptedButtons: Qt.LeftButton
-        onTapped: button.clicked()
-    }
-
-    TapHandler {
-        acceptedButtons: Qt.RightButton
-        onTapped: button.rightClicked()
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton)
+                button.rightClicked();
+            else
+                button.clicked();
+        }
     }
 }

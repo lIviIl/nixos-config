@@ -29,17 +29,16 @@ Item {
         }
     }
 
-    HoverHandler {
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-    }
 
-    TapHandler {
-        acceptedButtons: Qt.LeftButton
-        onTapped: Ui.togglePopup("focus")
-    }
-
-    TapHandler {
-        acceptedButtons: Qt.RightButton
-        onTapped: Focus.toggle()
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton)
+                Focus.toggle();
+            else
+                Ui.togglePopup("focus");
+        }
     }
 }

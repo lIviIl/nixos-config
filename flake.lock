@@ -39,7 +39,52 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "spotifast": "spotifast",
+        "zen-browser": "zen-browser"
+      }
+    },
+    "spotifast": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792186679,
+        "narHash": "sha256-PBWuIh5lxWrPP0gqllO2xkkKUm3SPyAbGl57V/pQLLA=",
+        "owner": "tomsch",
+        "repo": "spotifast-nix",
+        "rev": "c1aad55f8af2a186687b0d4c20682fa6efd7d253",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tomsch",
+        "repo": "spotifast-nix",
+        "type": "github"
+      }
+    },
+    "zen-browser": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792271801,
+        "narHash": "sha256-LYN8miMEew9CxgRrF/RCnAyOe6476dQM/JzELnFQef0=",
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
+        "rev": "e1b9b3578ebb388b56012cd9ddd80e19681d2d39",
+        "type": "github"
+      },
+      "original": {
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
+        "type": "github"
       }
     }
   },

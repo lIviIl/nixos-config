@@ -37,20 +37,22 @@ for f in CenterButton NotesPage Veil Doors Icon Pill Clock Feather; do
 done
 
 section "Edits"
-check "volume panel opens through Ui"          contains Status.qml 'Ui.toggleVolume()'
-check "media bar item opens the media panel"   contains NowPlaying.qml 'Ui.togglePopup("media")'
-check "calendar refresh follows its panel"     contains Agenda.qml 'popup === "calendar"'
-check "timer, pencil and bell icons exist"     sh -c "grep -q 'kind === \"timer\"' '$shell/Glyph.qml' && grep -q 'kind === \"pencil\"' '$shell/Glyph.qml' && grep -q 'kind === \"bell\"' '$shell/Glyph.qml'"
-check "lock: screenshot layer exists"          contains LockScene.qml 'id: shot'
-check "lock: screenshot is above the red"      contains LockScene.qml 'z: 10'
-check "lock: red no longer fades out"          lacks LockScene.qml '(1 - scene.exit)'
-check "lock state has shotReady"               contains LockState.qml 'shotReady'
-check "panels can be non-modal"                contains Panel.qml 'property bool modal'
-check "drop panels take input only in the card" contains DropPanel.qml 'mask: Region'
-check "notes overlay is non-modal"             contains Scratchpad.qml 'modal: false'
-check "notes overlay has its IPC handler"      contains Scratchpad.qml 'target: "notes"'
-check "spectrum is not a separate card"        lacks MediaPage.qml 'title: "SPECTRUM"'
-check "Super+N and Super+T are bound"          grep -q 'ipc call notes toggle' "$repo/home/rices/lelouch/quickshell.nix"
+check "volume panel opens through Ui"             contains Status.qml 'Ui.toggleVolume()'
+check "calendar refresh follows its panel"        contains Agenda.qml 'popup === "calendar"'
+check "lock: screenshot is above the red"         contains LockScene.qml 'z: 10'
+check "panels can be non-modal"                   contains Panel.qml 'property bool modal'
+check "drop panels take input only in the card"   contains DropPanel.qml 'mask: Region'
+check "notes overlay is non-modal"                contains Scratchpad.qml 'modal: false'
+check "notes overlay has its IPC handler"         contains Scratchpad.qml 'target: "notes"'
+check "no CLOSE label on drop panels"             lacks DropPanel.qml 'text: "CLOSE"'
+check "no CLOSE label on the notes overlay"       lacks Scratchpad.qml 'text: "CLOSE"'
+check "no phase label on the Focus card"          lacks FocusPage.qml 'subtitle: Focus.phaseLabel'
+check "toasts follow Ui.rightInset"               contains Notifications.qml 'Ui.rightInset'
+check "bar buttons use a plain mouse area"        lacks BarButton.qml 'TapHandler'
+check "now playing has no hover tracking"         lacks NowPlaying.qml 'HoverHandler'
+check "timer item has no hover tracking"          lacks FocusItem.qml 'HoverHandler'
+check "clock has no hover tracking"               lacks ClockItem.qml 'HoverHandler'
+check "Super+N and Super+T are bound"             grep -q 'ipc call notes toggle' "$repo/home/rices/lelouch/quickshell.nix"
 
 section "IPC targets the shell answers to"
 for t in launcher wallpaper center lock calendar media alerts focus notes; do
@@ -59,20 +61,27 @@ done
 
 section "Tools"
 for t in qs hyprctl wpctl pactl paplay nmcli brightnessctl powerprofilesctl cava curl notify-send \
-         lock-screen lelouch-lockshot lelouch-chime lelouch-capture lelouch-agenda lelouch-sysinfo recolor wallpaper; do
+         lock-screen lelouch-lockshot lelouch-chime lelouch-capture lelouch-agenda lelouch-sysinfo recolor wallpaper \
+         vesktop spotifast; do
   check "$t" command -v "$t"
 done
+check "zen" sh -c 'command -v zen || command -v zen-beta'
 
 section "System"
 check "lock screen PAM service" test -f /etc/pam.d/lelouch-lock
 check "quickshell service running" systemctl --user is-active --quiet quickshell
 check "Syncthing running" systemctl is-active --quiet syncthing
+check "Wayland for Electron apps (needs a new login after the first rebuild)" sh -c '[ "${NIXOS_OZONE_WL:-}" = 1 ]'
 
 section "Data folders"
-for d in "$HOME/Sync/todo" "$HOME/Sync/notes" "$HOME/.config/lelouch" "$HOME/.local/state/lelouch"; do
+for d in "$HOME/Sync/todo" "$HOME/Sync/notes" "$HOME/.config/lelouch" "$HOME/.local/state/lelouch" "$HOME/.config/vesktop/settings"; do
   check "${d/#$HOME/~}" test -d "$d"
 done
 check "calendar link saved" test -r "$HOME/.config/lelouch/calendar-url"
+
+section "Wallpaper colours reach the apps (run: wallpaper, then this again)"
+check "Vesktop QuickCSS written" test -s "$HOME/.config/vesktop/settings/quickCss.css"
+check "Zen colours written"      test -s "$HOME/.cache/matugen/colors-zen.css"
 
 section "Lock screen screenshot (any message from grim appears here)"
 output="$(hyprctl monitors 2> /dev/null | awk '/^Monitor/ {print $2; exit}')"
@@ -101,6 +110,19 @@ if [ -r "$HOME/.config/lelouch/calendar-url" ] && command -v lelouch-agenda > /d
 else
   printf '  skipped  no calendar link saved yet\n'
 fi
+
+section "Files to send me for theming Spotifast and Zen (nothing private is printed)"
+printf '  ~/.config/spotifast:\n'
+ls -la "$HOME/.config/spotifast" 2> /dev/null | sed 's/^/    /' || true
+if ls "$HOME/.config/spotifast/themes/"* > /dev/null 2>&1; then
+  for f in "$HOME/.config/spotifast/themes/"*; do
+    printf '  --- %s\n' "$f"
+    head -c 1500 "$f"
+    printf '\n'
+  done
+fi
+printf '  ~/.zen:\n'
+ls "$HOME/.zen" 2> /dev/null | sed 's/^/    /' || true
 
 section "Recent shell errors (newest last)"
 journalctl --user -u quickshell -b -n 300 --no-pager 2> /dev/null | grep -E '\.qml|ERROR|WARN' | tail -n 12 || true

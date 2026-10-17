@@ -53,3 +53,10 @@ The shell restarts itself after a rebuild. To try QML changes without rebuilding
 1. Install NixOS, clone this repo, copy the new `hardware-configuration.nix` into `hosts/<machine>/`.
 2. Add the machine to `flake.nix` and `sudo nixos-rebuild switch --flake .#<machine>`.
 3. Put the calendar link back, set up Syncthing (http://127.0.0.1:8384), put a picture at `~/.face`.
+
+## Apps (home/apps.nix)
+
+- Zen Browser and Spotifast come from their own flakes (inputs in `flake.nix`); Vesktop is from nixpkgs.
+- Home Manager modules receive the flake inputs as the `inputs` argument.
+- Colours from the wallpaper reach Vesktop (`~/.config/vesktop/settings/quickCss.css`, live) and Zen
+  (`~/.cache/matugen/colors-zen.css`, read at startup) through matugen templates defined in `apps.nix`.

@@ -20,6 +20,9 @@ Singleton {
 
     readonly property bool anyOpen: volumeOpen || centerOpen || popup !== ""
 
+    // How much of the right edge the open surface covers (its width and the gaps), so notifications step aside
+    readonly property real rightInset: volumeOpen ? 324 : (centerOpen ? 712 : (popup === "alerts" || popup === "focus" ? 484 : 0))
+
     function closeAll() {
         volumeOpen = false;
         centerOpen = false;

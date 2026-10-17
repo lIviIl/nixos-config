@@ -20,25 +20,6 @@ Panel {
         }
     }
 
-    Text {
-        anchors.top: parent.top
-        anchors.topMargin: 6
-        anchors.right: parent.right
-        anchors.rightMargin: 26
-        text: "CLOSE"
-        color: Theme.alpha(Theme.fg, 0.6)
-        font.family: Theme.mono
-        font.pixelSize: 10
-        font.bold: true
-        font.letterSpacing: 2
-
-        MouseArea {
-            anchors.fill: parent
-            anchors.margins: -6
-            cursorShape: Qt.PointingHandCursor
-            onClicked: pad.open = false
-        }
-    }
 
     Connections {
         target: Ui

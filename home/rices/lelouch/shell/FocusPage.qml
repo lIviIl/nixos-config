@@ -48,7 +48,6 @@ Item {
         SectionCard {
             icon: "timer"
             title: Focus.title
-            subtitle: Focus.phaseLabel
 
             Item {
                 Layout.alignment: Qt.AlignHCenter

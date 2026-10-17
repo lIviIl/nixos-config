@@ -5,6 +5,7 @@
     ./git.nix
     ./firefox.nix
     ./packages.nix
+    ./apps.nix
     ./desktop
     ./rices/lelouch   # <- change this line to switch rice
   ];

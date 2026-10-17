@@ -5,8 +5,8 @@ import Quickshell.Wayland
 
 // A panel that drops down from the bar. Its window starts just below the bar and covers the rest of the screen
 // invisibly, but it takes input only inside its card, so the desktop (and the bar) stay usable while it is open.
-// Close it with Esc, the CLOSE label, or its bar button. The page inside is loaded only while the panel is on
-// screen, and the card is exactly as tall as the page wants (up to the screen).
+// Close it with Esc or its bar button. The page inside is loaded only while the panel is on screen,
+// and the card is exactly as tall as the page wants (up to the screen).
 PanelWindow {
     id: win
 
@@ -104,24 +104,6 @@ PanelWindow {
                 height: item ? Math.min(item.implicitHeight, win.maxCard - win.padTop - win.padBottom) : 120
                 active: win.visible
                 sourceComponent: win.page
-            }
-        }
-
-        Text {
-            x: parent.width - width - 26
-            y: 4
-            text: "CLOSE"
-            color: Theme.alpha(Theme.fg, 0.6)
-            font.family: Theme.mono
-            font.pixelSize: 10
-            font.bold: true
-            font.letterSpacing: 2
-
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -6
-                cursorShape: Qt.PointingHandCursor
-                onClicked: Ui.popup = ""
             }
         }
     }

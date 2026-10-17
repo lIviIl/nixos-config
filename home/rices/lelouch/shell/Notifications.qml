@@ -52,7 +52,7 @@ Scope {
         id: toastWindow
 
         // How far the toasts step aside while the command center is open (its width plus the gap)
-        property real shift: Ui.centerOpen ? 712 : 0
+        property real shift: Ui.rightInset
 
         Behavior on shift {
             NumberAnimation {
