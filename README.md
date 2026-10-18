@@ -56,7 +56,12 @@ The shell restarts itself after a rebuild. To try QML changes without rebuilding
 
 ## Apps (home/apps.nix)
 
-- Zen Browser and Spotifast come from their own flakes (inputs in `flake.nix`); Vesktop is from nixpkgs.
+- Zen Browser and Spicetify come from their own flakes (inputs in `flake.nix`); Vesktop is from nixpkgs.
 - Home Manager modules receive the flake inputs as the `inputs` argument.
 - Colours from the wallpaper reach Vesktop (`~/.config/vesktop/settings/quickCss.css`, live) and Zen
   (`~/.cache/matugen/colors-zen.css`, read at startup) through matugen templates defined in `apps.nix`.
+
+## Design rule for panels
+
+A panel's window must be exactly as big as its card and must not use a click `mask`. Windows with a mask made bar
+clicks unreliable (see `DropPanel.qml`). `Panel.qml` is full-screen only when it is modal (launcher, wallpaper picker).

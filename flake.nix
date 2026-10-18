@@ -10,16 +10,15 @@
     };
 
     # Zen Browser (Firefox-based) is not in nixpkgs; this is its community flake.
-    # If Zen fails to build, try removing the nixpkgs line.
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
 
-    # Spotifast, a native Spotify client, packaged for Nix
-    spotifast = {
-      url = "github:tomsch/spotifast-nix";
+    # Spicetify: themes the official Spotify client (works with free accounts)
+    spicetify-nix = {
+      url = "github:Gerg-L/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

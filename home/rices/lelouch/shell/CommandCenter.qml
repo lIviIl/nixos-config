@@ -11,7 +11,7 @@ PanelWindow {
     id: win
 
     readonly property int drawerWidth: 700
-    readonly property real maxCard: height > 0 ? height : 900
+    readonly property real maxCard: (screen ? screen.height : 1080) - 56 - 12
 
     // Above the page: title, tab bar and their gaps (118). Below it: 24 px of space, like the top.
     readonly property int topChrome: 118
@@ -23,6 +23,22 @@ PanelWindow {
 
     // Where the card is heading (the card follows it with an animation)
     readonly property real targetHeight: chrome + pageHeight
+
+    // The window is as tall as the card will be: it grows at once, and shrinks after the card's own animation
+    property real winHeight: 200
+
+    onTargetHeightChanged: {
+        if (targetHeight > winHeight)
+            winHeight = targetHeight;
+        else
+            shrink.restart();
+    }
+
+    Timer {
+        id: shrink
+        interval: 320
+        onTriggered: win.winHeight = win.targetHeight
+    }
 
     readonly property var pages: [
         { id: "system", label: "SYSTEM" },
@@ -40,13 +56,10 @@ PanelWindow {
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
 
-    // Clicks land on the drawer's final size; the region doesn't chase the animation
-    mask: Region { item: hitbox }
 
     anchors {
         top: true
         right: true
-        bottom: true
     }
 
     margins {
@@ -56,9 +69,10 @@ PanelWindow {
     }
 
     implicitWidth: drawerWidth
+    implicitHeight: winHeight
 
     // Typing works once the drawer is clicked; it never grabs the keyboard on its own
-    WlrLayershell.keyboardFocus: Ui.centerOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
     IpcHandler {
         target: "center"
@@ -68,13 +82,6 @@ PanelWindow {
         }
     }
 
-    Item {
-        id: hitbox
-        x: 0
-        y: 0
-        width: win.drawerWidth
-        height: win.targetHeight
-    }
 
     Component { id: systemPage; SystemPage {} }
     Component { id: controlsPage; ControlsPage {} }

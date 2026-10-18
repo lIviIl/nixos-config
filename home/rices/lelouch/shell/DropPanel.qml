@@ -3,10 +3,9 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// A panel that drops down from the bar. Its window starts just below the bar and covers the rest of the screen
-// invisibly, but it takes input only inside its card, so the desktop (and the bar) stay usable while it is open.
-// Close it with Esc or its bar button. The page inside is loaded only while the panel is on screen,
-// and the card is exactly as tall as the page wants (up to the screen).
+// A panel that drops down from the bar. Its window is exactly as big as its card (no click mask, no invisible
+// full-screen area), so the desktop and the bar stay fully usable around it. Close it with Esc (after clicking
+// the panel) or its bar button. The page inside is loaded only while the panel is on screen.
 PanelWindow {
     id: win
 
@@ -19,28 +18,41 @@ PanelWindow {
     readonly property int padTop: 20
     readonly property int padBottom: 22
     readonly property int padSide: 20
-    readonly property real maxCard: Math.max(200, height - 4 - 12)
+    readonly property real maxCard: (screen ? screen.height : 1080) - 56 - 12
     readonly property real wanted: padTop + padBottom + (loader.item ? loader.item.implicitHeight : 120)
     readonly property real finalHeight: Math.min(wanted, maxCard)
-    readonly property real cardX: place === "left" ? 12 : (place === "right" ? width - cardWidth - 12 : Math.round((width - cardWidth) / 2))
+
+    // The window is as tall as the card will be: it grows at once, and shrinks after the card's own animation
+    property real winHeight: 160
+
+    onFinalHeightChanged: {
+        if (finalHeight > winHeight)
+            winHeight = finalHeight;
+        else
+            shrink.restart();
+    }
 
     visible: open || card.opacity > 0.01
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
-    margins.top: 52
+    implicitWidth: cardWidth
+    implicitHeight: winHeight
 
-    // Input only where the card will be
-    mask: Region { item: hitbox }
-
+    // Centered when it is anchored to neither side
     anchors {
         top: true
-        bottom: true
-        left: true
-        right: true
+        left: win.place === "left"
+        right: win.place === "right"
     }
 
-    // Typing works once the panel is clicked; it never grabs the keyboard on its own
-    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    margins {
+        top: 56
+        left: 12
+        right: 12
+    }
+
+    // Typing works once the panel is clicked; the setting never changes while the window exists
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
     IpcHandler {
         target: win.name
@@ -50,20 +62,17 @@ PanelWindow {
         }
     }
 
-    Item {
-        id: hitbox
-        x: win.cardX
-        y: 4
-        width: win.cardWidth
-        height: win.finalHeight
+    Timer {
+        id: shrink
+        interval: 320
+        onTriggered: win.winHeight = win.finalHeight
     }
 
     Item {
         id: card
-        width: win.cardWidth
+        width: parent.width
         height: win.finalHeight
-        x: win.cardX
-        y: 4 + (win.open ? 0 : -24)
+        y: win.open ? 0 : -24
         opacity: win.open ? 1 : 0
 
         Behavior on y {
