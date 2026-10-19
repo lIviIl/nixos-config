@@ -25,40 +25,45 @@ lacks() { ! grep -q -- "$2" "$shell/$1"; }
 section() { printf '\n== %s\n' "$1"; }
 
 section "Shell files"
-for f in shell Theme Ui TextStore CardFrame Chamfer Glyph Panel DropPanel Popups Scratchpad Bar BarButton \
-         CommandCenter SystemPage ControlsPage ConnectPage MediaPage AgendaPage AlertsPage FocusPage \
-         Whiteboard DurationField FocusItem Focus Notes Board Tasks History Agenda Lock LockScene Fmt Visualizer; do
+for f in shell Theme Ui TextStore CardFrame Chamfer Glyph Panel DropPanel Popups Scratchpad Bar BarButton BarDivider \
+         CommandCenter SystemPage ControlsPage ConnectPage MediaPage AgendaPage AlertsPage FocusPage LayoutPage \
+         Whiteboard DurationField FocusItem Focus Tiling Workspaces Notes Board Tasks History Agenda Lock LockScene Fmt Visualizer; do
   check "$f.qml" test -f "$shell/$f.qml"
 done
+check "workspace pictures folder" test -d "$shell/assets/workspaces"
 
 section "Files that should be gone"
 for f in CenterButton NotesPage Veil Doors Icon Pill Clock Feather; do
   check "$f.qml removed" test ! -e "$shell/$f.qml"
 done
 
+section "Panels are never unmapped (the bar-click fix)"
+check "drop panels have no visible binding"       lacks DropPanel.qml 'visible:'
+check "drop panels shrink to a pixel when closed" contains DropPanel.qml 'shown ? cardWidth : 1'
+check "command center has no visible binding"     lacks CommandCenter.qml 'visible:'
+check "command center shrinks when closed"        contains CommandCenter.qml 'shown ? drawerWidth : 1'
+check "non-modal panels stay mapped"              contains Panel.qml 'visible: modal ? shown : true'
+check "no click masks anywhere"                   sh -c "! grep -l 'mask: Region' '$shell'/*.qml | grep -v Notifications.qml"
+check "Esc closes the notes overlay"              contains Scratchpad.qml 'enabled: pad.open'
+check "Esc closes drop panels"                    contains DropPanel.qml 'enabled: win.open'
+
 section "Edits"
-check "volume panel opens through Ui"               contains Status.qml 'Ui.toggleVolume()'
-check "calendar refresh follows its panel"          contains Agenda.qml 'popup === "calendar"'
-check "lock: screenshot is above the red"           contains LockScene.qml 'z: 10'
-check "no click masks on drop panels"               lacks DropPanel.qml 'mask:'
-check "no click mask on the command center"         lacks CommandCenter.qml 'mask:'
-check "no click mask on panels"                     lacks Panel.qml 'mask:'
-check "command center window follows its card"      contains CommandCenter.qml 'implicitHeight: winHeight'
-check "command center keyboard focus is constant"   contains CommandCenter.qml 'WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand'
-check "drop panel window follows its card"          contains DropPanel.qml 'implicitHeight: winHeight'
-check "scratchpad sizes from the screen"            contains Scratchpad.qml 'screen ? screen.width'
-check "notes overlay is non-modal"                  contains Scratchpad.qml 'modal: false'
-check "notes overlay has its IPC handler"           contains Scratchpad.qml 'target: "notes"'
-check "no CLOSE label on drop panels"               lacks DropPanel.qml 'text: "CLOSE"'
-check "no phase label on the Focus card"            lacks FocusPage.qml 'subtitle: Focus.phaseLabel'
-check "toasts follow Ui.rightInset"                 contains Notifications.qml 'Ui.rightInset'
-check "bar buttons use a plain mouse area"          lacks BarButton.qml 'TapHandler'
-check "Super+N and Super+T are bound"               grep -q 'ipc call notes toggle' "$repo/home/rices/lelouch/quickshell.nix"
-check "Spicetify is the Spotify setup"              grep -q 'programs.spicetify' "$repo/home/apps.nix"
-check "Spotifast is gone"                           sh -c "! grep -q spotifast '$repo/home/apps.nix' '$repo/flake.nix'"
+check "volume panel opens through Ui"             contains Status.qml 'Ui.toggleVolume()'
+check "calendar refresh follows its panel"        contains Agenda.qml 'popup === "calendar"'
+check "lock: screenshot is above the red"         contains LockScene.qml 'z: 10'
+check "toasts follow Ui.rightInset"               contains Notifications.qml 'Ui.rightInset'
+check "bar buttons use a plain mouse area"        lacks BarButton.qml 'TapHandler'
+check "layout icons exist"                        contains Glyph.qml 'kind === "tile-scrolling"'
+check "layout panel exists"                       contains Popups.qml 'name: "layout"'
+check "workspaces read pictures"                  contains Workspaces.qml 'assets/workspaces'
+check "Super+N, Super+T and Super+Y are bound"    sh -c "grep -q 'ipc call notes toggle' '$repo/home/rices/lelouch/quickshell.nix' && grep -q 'ipc call tiling cycle' '$repo/home/rices/lelouch/quickshell.nix'"
+check "layout is restored from its Lua file"      grep -q 'layout.lua' "$repo/home/rices/lelouch/tiling.nix"
+check "tiling.nix is imported"                    grep -q 'tiling.nix' "$repo/home/rices/lelouch/default.nix"
+check "Zen has no theming left"                   sh -c "! grep -q -e userChrome -e colors-zen '$repo/home/apps.nix'"
+check "Spicetify is the Spotify setup"            grep -q 'programs.spicetify' "$repo/home/apps.nix"
 
 section "IPC targets the shell answers to"
-for t in launcher wallpaper center lock calendar media alerts focus notes; do
+for t in launcher wallpaper center lock calendar media layout alerts focus notes tiling; do
   check "target $t" sh -c "qs -c lelouch ipc show 2>/dev/null | grep -qw '$t'"
 done
 
@@ -74,17 +79,15 @@ section "System"
 check "lock screen PAM service" test -f /etc/pam.d/lelouch-lock
 check "quickshell service running" systemctl --user is-active --quiet quickshell
 check "Syncthing running" systemctl is-active --quiet syncthing
+printf '  current tiling layout: %s\n' "$(hyprctl getoption general:layout 2> /dev/null | head -n 1)"
+printf '  saved layout file:     %s\n' "$(cat "$HOME/.local/state/lelouch/layout.lua" 2> /dev/null || echo none yet)"
 
 section "Data folders"
 for d in "$HOME/Sync/todo" "$HOME/Sync/notes" "$HOME/.config/lelouch" "$HOME/.local/state/lelouch" "$HOME/.config/vesktop/settings"; do
   check "${d/#$HOME/~}" test -d "$d"
 done
 check "calendar link saved" test -r "$HOME/.config/lelouch/calendar-url"
-
-section "Wallpaper colours reach the apps (run: wallpaper, then this again)"
-check "Vesktop QuickCSS written"      test -s "$HOME/.config/vesktop/settings/quickCss.css"
-check "Zen colours written"           test -s "$HOME/.cache/matugen/colors-zen.css"
-check "Zen page colours written"      test -s "$HOME/.cache/matugen/colors-zen-content.css"
+check "Vesktop QuickCSS written" test -s "$HOME/.config/vesktop/settings/quickCss.css"
 
 section "Lock screen screenshot (any message from grim appears here)"
 output="$(hyprctl monitors 2> /dev/null | awk '/^Monitor/ {print $2; exit}')"
@@ -114,20 +117,8 @@ else
   printf '  skipped  no calendar link saved yet\n'
 fi
 
-section "Zen (if it still looks plain, this is what I need)"
-printf '  running: %s\n' "$(pgrep -fc 'zen' 2> /dev/null || echo 0)"
-printf '  profiles.ini:\n'
-sed 's/^/    /' "$HOME/.zen/profiles.ini" 2> /dev/null || printf '    (none)\n'
-for p in "$HOME"/.zen/*/; do
-  [ -d "$p" ] || continue
-  printf '  %s\n' "${p/#$HOME/~}"
-  printf '    chrome/userChrome.css: %s\n' "$( [ -f "$p/chrome/userChrome.css" ] && head -n 1 "$p/chrome/userChrome.css" || echo missing )"
-  printf '    chrome/userContent.css: %s\n' "$( [ -f "$p/chrome/userContent.css" ] && echo present || echo missing )"
-  printf '    stylesheets pref in user.js: %s\n' "$(grep -c 'legacyUserProfileCustomizations' "$p/user.js" 2> /dev/null || echo 0)"
-done
-
-section "Windows the shell has on screen right now"
-hyprctl layers 2> /dev/null | grep -E 'Monitor|namespace' | sed 's/^/  /' | cut -c1-110 || true
+section "Windows the shell has on screen right now (closed panels show as 1x1)"
+hyprctl layers 2> /dev/null | grep -E 'namespace|xywh' | paste - - 2> /dev/null | sed 's/^/  /' | cut -c1-150 || true
 
 section "Recent shell errors (newest last)"
 journalctl --user -u quickshell -b -n 300 --no-pager 2> /dev/null | grep -E '\.qml|ERROR|WARN' | tail -n 12 || true

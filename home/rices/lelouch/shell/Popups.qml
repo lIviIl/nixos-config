@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 // Everything that drops down from the bar, plus the scratchpad. One at a time (see Ui.popup).
 Scope {
@@ -18,6 +19,13 @@ Scope {
     }
 
     DropPanel {
+        name: "layout"
+        place: "left"
+        cardWidth: 420
+        page: Component { LayoutPage {} }
+    }
+
+    DropPanel {
         name: "alerts"
         place: "right"
         cardWidth: 460
@@ -32,6 +40,15 @@ Scope {
     }
 
     Scratchpad {}
+
+    // Super+Y
+    IpcHandler {
+        target: "tiling"
+
+        function cycle(): void {
+            Tiling.cycle();
+        }
+    }
 
     Connections {
         target: Ui

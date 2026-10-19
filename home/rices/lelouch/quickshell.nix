@@ -41,5 +41,6 @@
     hl.bind("SUPER + C", hl.dsp.exec_cmd("qs -c lelouch ipc call center toggle"))
     hl.bind("SUPER + N", hl.dsp.exec_cmd("qs -c lelouch ipc call notes toggle"))
     hl.bind("SUPER + T", hl.dsp.exec_cmd("qs -c lelouch ipc call focus toggle"))
+    hl.bind("SUPER + Y", hl.dsp.exec_cmd("qs -c lelouch ipc call tiling cycle"))
   '';
 }

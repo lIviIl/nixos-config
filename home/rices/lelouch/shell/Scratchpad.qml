@@ -9,6 +9,12 @@ Panel {
 
     modal: false
 
+    Shortcut {
+        sequence: "Escape"
+        enabled: pad.open
+        onActivated: pad.open = false
+    }
+
     cardWidth: Math.max(640, Math.min(1180, (screen ? screen.width : 1920) - 120))
     cardHeight: Math.max(480, Math.min(740, (screen ? screen.height : 1080) - 140))
 

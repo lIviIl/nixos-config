@@ -4,8 +4,8 @@ import Quickshell.Io
 import Quickshell.Wayland
 
 // The command center: a drawer on the right edge with three tabs (system, controls, connect).
-// The window is full height and never resizes; the card inside it is as tall as its page wants
-// (up to the full height), and everything outside the card is click-through.
+// Its window is exactly as tall as its card, stays mapped for good, and shrinks to one transparent pixel while closed
+// (unmapping layer surfaces made clicks on the bar unreliable). There is no click mask.
 // The page keeps its own final size while the card grows around it, so nothing is re-laid out mid-animation.
 PanelWindow {
     id: win
@@ -24,6 +24,8 @@ PanelWindow {
     // Where the card is heading (the card follows it with an animation)
     readonly property real targetHeight: chrome + pageHeight
 
+    readonly property bool shown: Ui.centerOpen || card.x < drawerWidth
+
     // The window is as tall as the card will be: it grows at once, and shrinks after the card's own animation
     property real winHeight: 200
 
@@ -32,12 +34,6 @@ PanelWindow {
             winHeight = targetHeight;
         else
             shrink.restart();
-    }
-
-    Timer {
-        id: shrink
-        interval: 320
-        onTriggered: win.winHeight = win.targetHeight
     }
 
     readonly property var pages: [
@@ -52,10 +48,10 @@ PanelWindow {
         connect: connectPage
     })
 
-    visible: Ui.centerOpen || card.x < drawerWidth
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
-
+    implicitWidth: shown ? drawerWidth : 1
+    implicitHeight: shown ? winHeight : 1
 
     anchors {
         top: true
@@ -65,13 +61,9 @@ PanelWindow {
     margins {
         top: 56
         right: 12
-        bottom: 12
     }
 
-    implicitWidth: drawerWidth
-    implicitHeight: winHeight
-
-    // Typing works once the drawer is clicked; it never grabs the keyboard on its own
+    // Typing works once the drawer is clicked; the setting never changes while the window exists
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
     IpcHandler {
@@ -82,6 +74,17 @@ PanelWindow {
         }
     }
 
+    Shortcut {
+        sequence: "Escape"
+        enabled: Ui.centerOpen
+        onActivated: Ui.centerOpen = false
+    }
+
+    Timer {
+        id: shrink
+        interval: 320
+        onTriggered: win.winHeight = win.targetHeight
+    }
 
     Component { id: systemPage; SystemPage {} }
     Component { id: controlsPage; ControlsPage {} }
@@ -93,7 +96,7 @@ PanelWindow {
 
         Item {
             id: card
-            width: parent.width
+            width: win.drawerWidth
             height: win.targetHeight
 
             x: Ui.centerOpen ? 0 : win.drawerWidth + 20
@@ -117,11 +120,6 @@ PanelWindow {
 
             CardFrame {
                 anchors.fill: parent
-            }
-
-            Item {
-                focus: true
-                Keys.onEscapePressed: Ui.centerOpen = false
             }
 
             // Row 1: the title and close
@@ -251,7 +249,7 @@ PanelWindow {
                     width: parent.width
                     height: win.pageHeight
 
-                    active: Ui.centerOpen || card.x < win.drawerWidth
+                    active: win.shown
                     sourceComponent: win.pageComponents[Ui.centerPage] ?? systemPage
 
                     onLoaded: fadeIn.restart()

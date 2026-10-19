@@ -58,10 +58,17 @@ The shell restarts itself after a rebuild. To try QML changes without rebuilding
 
 - Zen Browser and Spicetify come from their own flakes (inputs in `flake.nix`); Vesktop is from nixpkgs.
 - Home Manager modules receive the flake inputs as the `inputs` argument.
-- Colours from the wallpaper reach Vesktop (`~/.config/vesktop/settings/quickCss.css`, live) and Zen
-  (`~/.cache/matugen/colors-zen.css`, read at startup) through matugen templates defined in `apps.nix`.
+- Colours from the wallpaper reach Vesktop (`~/.config/vesktop/settings/quickCss.css`, live) through a matugen template in `apps.nix`. Zen is configured inside Zen.
+
 
 ## Design rule for panels
 
 A panel's window must be exactly as big as its card and must not use a click `mask`. Windows with a mask made bar
 clicks unreliable (see `DropPanel.qml`). `Panel.qml` is full-screen only when it is modal (launcher, wallpaper picker).
+
+## Layouts and workspace labels
+
+- The tiling layout (dwindle, master, scrolling, monocle) is chosen from the layout button in the bar or with
+  `Super+Y`. It is applied live with `hyprctl eval` and remembered in `~/.local/state/lelouch/layout.lua`,
+  which `home/rices/lelouch/tiling.nix` loads at every Hyprland config load.
+- Workspace labels: edit `glyphs` in `shell/Workspaces.qml`, or drop pictures into `shell/assets/workspaces/`.

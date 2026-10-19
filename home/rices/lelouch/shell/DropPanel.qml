@@ -3,9 +3,10 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// A panel that drops down from the bar. Its window is exactly as big as its card (no click mask, no invisible
-// full-screen area), so the desktop and the bar stay fully usable around it. Close it with Esc (after clicking
-// the panel) or its bar button. The page inside is loaded only while the panel is on screen.
+// A panel that drops down from the bar. Its window is exactly as big as its card, stays mapped for good, and shrinks
+// to one transparent pixel while closed (unmapping layer surfaces made clicks on the bar unreliable). There is no
+// click mask and no invisible full-screen area, so the desktop and the bar stay fully usable around it.
+// Close it with Esc (after clicking the panel) or its bar button. The page inside is loaded only while it is shown.
 PanelWindow {
     id: win
 
@@ -15,6 +16,7 @@ PanelWindow {
     property Component page: null
 
     readonly property bool open: Ui.popup === name
+    readonly property bool shown: open || card.opacity > 0.01
     readonly property int padTop: 20
     readonly property int padBottom: 22
     readonly property int padSide: 20
@@ -32,11 +34,10 @@ PanelWindow {
             shrink.restart();
     }
 
-    visible: open || card.opacity > 0.01
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
-    implicitWidth: cardWidth
-    implicitHeight: winHeight
+    implicitWidth: shown ? cardWidth : 1
+    implicitHeight: shown ? winHeight : 1
 
     // Centered when it is anchored to neither side
     anchors {
@@ -62,6 +63,12 @@ PanelWindow {
         }
     }
 
+    Shortcut {
+        sequence: "Escape"
+        enabled: win.open
+        onActivated: Ui.popup = ""
+    }
+
     Timer {
         id: shrink
         interval: 320
@@ -70,7 +77,7 @@ PanelWindow {
 
     Item {
         id: card
-        width: parent.width
+        width: win.cardWidth
         height: win.finalHeight
         y: win.open ? 0 : -24
         opacity: win.open ? 1 : 0
@@ -96,11 +103,6 @@ PanelWindow {
         }
 
         Item {
-            focus: true
-            Keys.onEscapePressed: Ui.popup = ""
-        }
-
-        Item {
             x: win.padSide
             y: win.padTop
             width: parent.width - 2 * win.padSide
@@ -111,7 +113,7 @@ PanelWindow {
                 id: loader
                 width: parent.width
                 height: item ? Math.min(item.implicitHeight, win.maxCard - win.padTop - win.padBottom) : 120
-                active: win.visible
+                active: win.shown
                 sourceComponent: win.page
             }
         }

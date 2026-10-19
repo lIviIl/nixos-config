@@ -379,6 +379,33 @@ Canvas {
             ctx.moveTo(10.6, 4.6);
             ctx.lineTo(13.4, 7.4);
             ctx.stroke();
+        } else if (kind === "tile-dwindle") {
+            ctx.strokeRect(2.5, 2.5, 13, 13);
+            ctx.beginPath();
+            ctx.moveTo(9, 2.5);
+            ctx.lineTo(9, 15.5);
+            ctx.moveTo(9, 9);
+            ctx.lineTo(15.5, 9);
+            ctx.moveTo(12.2, 9);
+            ctx.lineTo(12.2, 15.5);
+            ctx.stroke();
+        } else if (kind === "tile-master") {
+            ctx.strokeRect(2.5, 2.5, 13, 13);
+            ctx.beginPath();
+            ctx.moveTo(10, 2.5);
+            ctx.lineTo(10, 15.5);
+            ctx.moveTo(10, 9);
+            ctx.lineTo(15.5, 9);
+            ctx.stroke();
+            ctx.fillRect(4, 4, 4.5, 10);
+        } else if (kind === "tile-scrolling") {
+            ctx.strokeRect(1.5, 4, 3.5, 10);
+            ctx.strokeRect(6.5, 3, 5, 12);
+            ctx.strokeRect(13, 4, 3.5, 10);
+            ctx.fillRect(7.5, 4, 3, 10);
+        } else if (kind === "tile-monocle") {
+            ctx.strokeRect(5, 2.5, 10.5, 10.5);
+            ctx.strokeRect(2.5, 5, 10.5, 10.5);
         } else if (kind === "keyboard") {
             ctx.strokeRect(1.5, 4.5, 15, 9);
             ctx.fillRect(4, 6.8, 2, 1.8);

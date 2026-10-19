@@ -1,13 +1,20 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 
-// Workspaces 1-5 are always shown; 6-10 appear while they are in use.
+// Workspaces 1 to 5 are always shown; 6 to 10 appear while they are in use.
+// Each one is drawn as a picture (assets/workspaces/<n>.svg or .png) if there is one, otherwise as its glyph below.
 Row {
     id: root
+
     spacing: 2
 
-    readonly property var labels: ["K", "Q", "R", "B", "N", "P", "VII", "VIII", "IX", "X"]
+    // Workspaces 1 to 10, in order. Any characters work (chess pieces, kanji, numerals, ...).
+    readonly property var glyphs: ["♔", "♕", "♖", "♗", "♘", "♙", "♚", "♛", "♜", "♝"]
+
+    // Recolour pictures with the theme (they should be one-colour shapes). false keeps their own colours.
+    readonly property bool tintIcons: true
 
     Repeater {
         model: 10
@@ -16,16 +23,18 @@ Row {
             id: tile
 
             required property int index
+
             readonly property int n: index + 1
-            readonly property var matches: Hyprland.workspaces.values.filter(w => w.id === n)
-            readonly property bool exists: matches.length > 0
+            readonly property bool exists: Hyprland.workspaces.values.some(w => w.id === n)
             readonly property bool focused: Hyprland.focusedWorkspace !== null && Hyprland.focusedWorkspace.id === n
+            readonly property color ink: focused ? Theme.onPrimary : Theme.alpha(Theme.fg, exists ? 0.9 : 0.4)
+            readonly property bool hasPicture: pic.status === Image.Ready
+            readonly property string glyph: root.glyphs[index] ?? String(n)
 
             visible: n <= 5 || exists
-            width: Math.max(30, label.implicitWidth + 18)
+            width: Math.max(30, (hasPicture ? 18 : label.implicitWidth) + 18)
             height: 28
 
-            // Active marker: primary fill with a crimson edge
             Chamfer {
                 anchors.fill: parent
                 cut: 5
@@ -33,14 +42,51 @@ Row {
                 strokeColor: Theme.crimson
                 opacity: tile.focused ? 1 : 0
 
-                Behavior on opacity { NumberAnimation { duration: 180 } }
+                Behavior on opacity { NumberAnimation { duration: 160 } }
             }
 
-            BarText {
-                id: label
+            // A picture, if one exists (svg first, then png)
+            Image {
+                id: pic
+
+                property bool triedPng: false
+
+                visible: false
+                width: 18
+                height: 18
+                fillMode: Image.PreserveAspectFit
+                sourceSize.width: 72
+                sourceSize.height: 72
+                asynchronous: true
+                source: Qt.resolvedUrl("assets/workspaces/" + tile.n + ".svg")
+
+                onStatusChanged: {
+                    if (status === Image.Error && !triedPng) {
+                        triedPng = true;
+                        source = Qt.resolvedUrl("assets/workspaces/" + tile.n + ".png");
+                    }
+                }
+            }
+
+            MultiEffect {
+                visible: tile.hasPicture
                 anchors.centerIn: parent
-                text: root.labels[tile.n - 1]
-                color: tile.focused ? Theme.onPrimary : Theme.alpha(Theme.fg, tile.exists ? 0.9 : 0.4)
+                width: 18
+                height: 18
+                source: pic
+                colorization: root.tintIcons ? 1.0 : 0.0
+                colorizationColor: tile.ink
+            }
+
+            Text {
+                id: label
+                visible: !tile.hasPicture
+                anchors.centerIn: parent
+                text: tile.glyph
+                color: tile.ink
+                font.family: Theme.mono
+                font.pixelSize: tile.glyph.length > 2 ? 13 : 17
+                font.bold: true
             }
 
             MouseArea {

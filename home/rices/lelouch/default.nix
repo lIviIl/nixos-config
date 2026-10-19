@@ -10,6 +10,7 @@
     ./media.nix
     ./agenda.nix
     ./focus.nix
+    ./tiling.nix
     ./lock.nix
   ];
 }
