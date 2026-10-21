@@ -46,6 +46,7 @@ Item {
         cursorShape: Qt.PointingHandCursor
 
         onClicked: mouse => {
+            Ui.anchorTo(button);
             if (mouse.button === Qt.RightButton)
                 button.rightClicked();
             else

@@ -43,6 +43,6 @@ Item {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: Ui.togglePopup("calendar")
+        onClicked: { Ui.anchorTo(root); Ui.togglePopup("calendar"); }
     }
 }

@@ -80,7 +80,7 @@ Row {
         muted: root.muted
 
         onClicked: Ui.toggleVolume()
-        onRightClicked: Ui.toggleCenter("controls")
+        onRightClicked: Ui.toggleCenter("controls", "right")
         onScrolled: direction => AudioCtl.step(root.sink, direction)
     }
 
@@ -92,7 +92,7 @@ Row {
         text: !Net.radioOn ? "off" : (Net.connected ? Net.ssid : "offline")
         level: Net.connected ? Net.signal : 0
 
-        onClicked: Ui.toggleCenter("connect")
+        onClicked: Ui.toggleCenter("connect", "right")
         onRightClicked: {
             Quickshell.execDetached(["nmcli", "radio", "wifi", Net.radioOn ? "off" : "on"]);
             radioDelay.restart();
@@ -119,7 +119,7 @@ Row {
         charging: root.charging
         tint: root.low ? Theme.crimson : Theme.fg
 
-        onClicked: Ui.toggleCenter("system")
-        onRightClicked: Ui.toggleCenter("controls")
+        onClicked: Ui.toggleCenter("system", "right")
+        onRightClicked: Ui.toggleCenter("controls", "right")
     }
 }

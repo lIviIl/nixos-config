@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// The command center: a drawer on the right edge with three tabs (system, controls, connect).
+// The command center (system, controls, connect), dropping down from the bar under the icon that opened it.
 // Its window is exactly as tall as its card, stays mapped for good, and shrinks to one transparent pixel while closed
 // (unmapping layer surfaces made clicks on the bar unreliable). There is no click mask.
 // The page keeps its own final size while the card grows around it, so nothing is re-laid out mid-animation.
@@ -11,6 +11,7 @@ PanelWindow {
     id: win
 
     readonly property int drawerWidth: 700
+    readonly property real screenW: screen ? screen.width : 1920
     readonly property real maxCard: (screen ? screen.height : 1080) - 56 - 12
 
     // Above the page: title, tab bar and their gaps (118). Below it: 24 px of space, like the top.
@@ -24,7 +25,46 @@ PanelWindow {
     // Where the card is heading (the card follows it with an animation)
     readonly property real targetHeight: chrome + pageHeight
 
-    readonly property bool shown: Ui.centerOpen || card.x < drawerWidth
+    readonly property bool shown: Ui.centerOpen || card.opacity > 0.01
+
+    // Where the card sits: centred under the icon (a shortcut opens it at the right edge), kept 12 px inside the screen
+    property real cardLeft: 12
+
+    function latch() {
+        const want = Ui.anchorX >= 0 ? Ui.anchorX : screenW - 12 - drawerWidth / 2;
+        cardLeft = Math.max(12, Math.min(screenW - drawerWidth - 12, want - drawerWidth / 2));
+    }
+
+    Component.onCompleted: latch()
+
+    Connections {
+        target: Ui
+
+        function onCenterOpenChanged() {
+            if (Ui.centerOpen)
+                win.latch();
+        }
+
+        function onAnchorXChanged() {
+            if (Ui.centerOpen)
+                win.latch();
+        }
+    }
+
+    // Tell notifications where the open panel is
+    Binding {
+        target: Ui
+        property: "surfaceLeft"
+        value: win.cardLeft
+        when: Ui.centerOpen
+    }
+
+    Binding {
+        target: Ui
+        property: "surfaceRight"
+        value: win.cardLeft + win.drawerWidth
+        when: Ui.centerOpen
+    }
 
     // The window is as tall as the card will be: it grows at once, and shrinks after the card's own animation
     property real winHeight: 200
@@ -55,21 +95,22 @@ PanelWindow {
 
     anchors {
         top: true
-        right: true
+        left: true
     }
 
     margins {
         top: 56
-        right: 12
+        left: win.cardLeft
     }
 
-    // Typing works once the drawer is clicked; the setting never changes while the window exists
+    // Typing works once the panel is clicked; the setting never changes while the window exists
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
     IpcHandler {
         target: "center"
 
         function toggle(): void {
+            Ui.anchorTo();
             Ui.toggleCenter(Ui.centerPage);
         }
     }
@@ -99,12 +140,12 @@ PanelWindow {
             width: win.drawerWidth
             height: win.targetHeight
 
-            x: Ui.centerOpen ? 0 : win.drawerWidth + 20
+            y: Ui.centerOpen ? 0 : -24
             opacity: Ui.centerOpen ? 1 : 0
 
-            Behavior on x {
+            Behavior on y {
                 NumberAnimation {
-                    duration: 220
+                    duration: 170
                     easing.type: Easing.OutCubic
                 }
             }
@@ -116,7 +157,7 @@ PanelWindow {
                 }
             }
 
-            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on opacity { NumberAnimation { duration: 150 } }
 
             CardFrame {
                 anchors.fill: parent

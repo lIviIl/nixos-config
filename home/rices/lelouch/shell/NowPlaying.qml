@@ -60,7 +60,7 @@ Item {
             if (mouse.button === Qt.RightButton)
                 Media.toggle();
             else
-                Ui.togglePopup("media");
+                { Ui.anchorTo(root); Ui.togglePopup("media"); }
         }
     }
 }

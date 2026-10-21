@@ -38,7 +38,7 @@ Item {
             if (mouse.button === Qt.RightButton)
                 Focus.toggle();
             else
-                Ui.togglePopup("focus");
+                { Ui.anchorTo(root); Ui.togglePopup("focus"); }
         }
     }
 }
