@@ -46,7 +46,7 @@ in
   };
 
   # ---- CPU and power: power-profiles-daemon stays in charge; plugged in = acProfile, battery = balanced ----
-  services.thermald.enable = true;
+  # No thermald: it refuses to run on this ThinkPad, whose firmware manages heat itself.
   services.udev.extraRules = ''
     SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="1", RUN+="${pkgs.systemd}/bin/systemd-run --no-block ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set ${acProfile}"
     SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="0", RUN+="${pkgs.systemd}/bin/systemd-run --no-block ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced"

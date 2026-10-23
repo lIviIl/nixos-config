@@ -23,7 +23,7 @@ in
         "SUPER,d,spawn,fuzzel"
         "SUPER,q,killclient,"
         "SUPER,r,reload_config"
-        "SUPER+SHIFT,e,quit"
+        "SUPER+SHIFT,e,spawn,switch-session hyprland"
         "SUPER,l,spawn,lock-screen"
         "SUPER,f,togglefullscreen,"
         "SUPER,v,togglefloating,"
@@ -49,6 +49,13 @@ in
     autostart_sh = ''
       # Lock on arrival when this session was switched to from a lock screen. Keep this line.
       relock-if-flagged 3 &
+
+      # First start only: a window that says how to find your way around, and back to Hyprland
+      if [ ! -e "$HOME/.cache/lelouch/mango-hint-seen" ]; then
+        mkdir -p "$HOME/.cache/lelouch"
+        touch "$HOME/.cache/lelouch/mango-hint-seen"
+        kitty --title "Mango" sh -c 'echo "MANGO"; echo; echo "  Super+Enter      terminal"; echo "  Super+D          launcher (type hyprland to switch back)"; echo "  Super+Q          close a window"; echo "  Super+1 to 9     tags (workspaces)"; echo; echo "  Super+Ctrl+H     back to Hyprland (Lelouch rice)"; echo "  Super+Shift+E    back to Hyprland (Lelouch rice)"; echo; echo "Press Enter to close this window."; read -r _' &
+      fi
     '';
   };
 }

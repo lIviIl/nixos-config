@@ -99,7 +99,6 @@ if [ "${1:-}" != "--baseline" ]; then
   check "Wi-Fi power save off"             sh -c "iw dev '$wifi' get power_save 2> /dev/null | grep -qi 'off'"
   check "scx scheduler running"            systemctl is-active --quiet scx
   check "sched_ext enabled"                sh -c '[ "$(cat /sys/kernel/sched_ext/state 2> /dev/null)" = enabled ]'
-  check "thermald running"                 systemctl is-active --quiet thermald
   check "earlyoom running"                 systemctl is-active --quiet earlyoom
   check "systemd-resolved running"         systemctl is-active --quiet systemd-resolved
   check "fstrim timer active"              systemctl is-active --quiet fstrim.timer

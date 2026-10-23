@@ -47,9 +47,16 @@ let
     sh -c "$cmd"
     status=$?
 
-    # A desktop that dies within 8 seconds is probably broken: wait before the display manager can retry
+    # A desktop that dies within 8 seconds is probably broken
     if [ $(( $(date +%s) - started )) -lt 8 ]; then
-      sleep 45
+      if [ "$choice" != hyprland ]; then
+        # Go back to Hyprland for the next login
+        mkdir -p "$HOME/.config/lelouch"
+        printf 'hyprland\n' > "$HOME/.config/lelouch/session"
+      else
+        # Hyprland itself failing: wait, so that a retry can never spin
+        sleep 45
+      fi
     fi
     exit "$status"
   '';

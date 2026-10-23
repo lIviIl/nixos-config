@@ -7,6 +7,7 @@ let
     text = ''
       # switch-session [--relock] NAME: end this session; the next login starts desktop NAME (with its rice).
       # --relock: lock the new session on arrival (only when seamless switching is on).
+      # From a text console (Ctrl+Alt+F2) it saves the choice and restarts the login screen.
       relock=0
       if [ "''${1:-}" = "--relock" ]; then
         relock=1
@@ -39,6 +40,11 @@ let
         touch "$HOME/.cache/lelouch/relock"
       fi
 
+      if [ "''${XDG_SESSION_TYPE:-}" != wayland ]; then
+        echo "Saved: $name starts at the next login. Restarting the login screen (asks for your password)..."
+        exec sudo systemctl restart display-manager
+      fi
+
       # The graphical session's id (the shell runs as a user service, which has no XDG_SESSION_ID of its own)
       sid="''${XDG_SESSION_ID:-$(loginctl show-user "$(id -un)" --property=Display --value)}"
       exec loginctl terminate-session "$sid"
@@ -60,6 +66,22 @@ let
 in
 {
   home.packages = [ switch relock ];
+
+  # Launcher entries, so a switch is one search away in either desktop
+  xdg.desktopEntries = {
+    switch-to-hyprland = {
+      name = "Switch to Hyprland (Lelouch rice)";
+      exec = "switch-session hyprland";
+      terminal = false;
+      categories = [ "System" ];
+    };
+    switch-to-mango = {
+      name = "Switch to Mango";
+      exec = "switch-session mango";
+      terminal = false;
+      categories = [ "System" ];
+    };
+  };
 
   # Hyprland (the Lelouch rice) locks on arrival when it was switched to from a lock screen
   wayland.windowManager.hyprland.extraConfig = ''

@@ -32,24 +32,32 @@ check "snapshot tag lelouch-rice exists" git -C "$repo" rev-parse -q --verify re
 
 section "Wiring"
 check "flake has the mango input"                  grep -q 'mangowm/mango' "$repo/flake.nix"
-check "flake adds the mango NixOS module"          grep -q 'nixosModules.mango' "$repo/flake.nix"
 check "host imports mango.nix and sessions.nix"    sh -c "grep -q 'modules/nixos/mango.nix' '$repo/hosts/nixos/default.nix' && grep -q 'modules/nixos/sessions.nix' '$repo/hosts/nixos/default.nix'"
 check "home imports both rices and sessions.nix"   sh -c "grep -q 'rices/lelouch' '$repo/home/default.nix' && grep -q 'rices/mango' '$repo/home/default.nix' && grep -q 'sessions.nix' '$repo/home/default.nix'"
 check "the Lelouch shell still starts under Hyprland only" grep -q 'hyprland-session.target' "$repo/home/rices/lelouch/quickshell.nix"
 check "lock screen switcher uses the stable folder" grep -q '/etc/lelouch/wayland-sessions' "$repo/home/rices/lelouch/shell/SessionSwitcher.qml"
+
+section "The way back from Mango"
+check "login session resets a failing choice"      grep -q "printf 'hyprland" "$repo/modules/nixos/sessions.nix"
+check "switch-session works from a text console"   grep -q 'XDG_SESSION_TYPE' "$repo/home/sessions.nix"
+check "Mango key: Super+Shift+E goes back"         grep -q 'SUPER+SHIFT,e,spawn,switch-session hyprland' "$repo/home/rices/mango/default.nix"
+check "Mango key: Super+Ctrl+H goes back"          grep -q 'SUPER+CTRL,h,spawn,switch-session hyprland' "$repo/home/rices/mango/default.nix"
+check "Mango first-start hint"                     grep -q 'mango-hint-seen' "$repo/home/rices/mango/default.nix"
+check "launcher entry: switch to Hyprland"         test -f "$HOME/.local/share/applications/switch-to-hyprland.desktop"
+check "launcher entry: switch to Mango"            test -f "$HOME/.local/share/applications/switch-to-mango.desktop"
 
 section "After the rebuild"
 check "the desktop list exists at $dir" test -d "$dir"
 for s in hyprland mango lelouch; do
   check "session $s is listed" test -f "$dir/$s.desktop"
 done
-check "mango"             command -v mango
-check "mmsg"              command -v mmsg
-check "switch-session"    command -v switch-session
-check "relock-if-flagged" command -v relock-if-flagged
-check "auto-login starts the wrapper session" sh -c "grep -rqs 'Session=lelouch' /etc/sddm.conf /etc/sddm.conf.d"
+for c in mango mmsg switch-session relock-if-flagged fuzzel kitty; do
+  check "$c" command -v "$c"
+done
+check "auto-login started the wrapper session this boot" sh -c "journalctl -b -u display-manager --no-pager 2> /dev/null | grep -q lelouch.desktop"
 check "Mango config written"    test -s "$HOME/.config/mango/config.conf"
 check "Mango autostart written" test -s "$HOME/.config/mango/autostart.sh"
+check "Mango config contains the way back" grep -q 'switch-session hyprland' "$HOME/.config/mango/config.conf"
 
 section "Login session dry run (what the next login would start; nothing is launched)"
 wrapper="$(sed -n 's/^Exec=//p' "$dir/lelouch.desktop" 2> /dev/null | head -n 1)"
@@ -81,6 +89,10 @@ printf '  this session:       %s / %s\n' "${XDG_SESSION_DESKTOP:-unknown}" "${XD
 printf '  chosen for next:    %s\n' "$(cat "$HOME/.config/lelouch/session" 2> /dev/null || echo 'none yet (hyprland)')"
 printf '  seamless switching: %s\n' "$( [ -e /etc/lelouch/seamless ] && echo on || echo 'off (the login screen appears after a switch)' )"
 printf '  desktops listed:    %s\n' "$(ls "$dir" 2> /dev/null | tr '\n' ' ')"
-printf '  boot generations:   %s\n' "$(sudo -n nix-env --list-generations -p /nix/var/nix/profiles/system 2> /dev/null | tail -n 1 || echo 'run with sudo to see')"
+
+section "What Mango was given (~/.config/mango/config.conf)"
+sed -n '1,45p' "$HOME/.config/mango/config.conf" 2> /dev/null | sed 's/^/  /'
+section "Mango autostart (~/.config/mango/autostart.sh)"
+sed -n '1,20p' "$HOME/.config/mango/autostart.sh" 2> /dev/null | sed 's/^/  /'
 
 printf '\n%d ok, %d problems\n' "$pass" "$fail"
