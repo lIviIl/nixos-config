@@ -21,7 +21,7 @@ Singleton {
 
     Process {
         id: query
-        command: ["sh", "-c", "nmcli radio wifi; nmcli -t -f IN-USE,SIGNAL,SSID dev wifi list"]
+        command: ["sh", "-c", "nmcli radio wifi; nmcli -t -f IN-USE,SIGNAL,SSID dev wifi list --rescan no"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = this.text.split("\n");

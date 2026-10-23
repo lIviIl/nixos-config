@@ -81,3 +81,11 @@ target, Mango's config only loads in Mango). The lock screen's SESSION buttons, 
 current session and log straight back in to the other one (`modules/nixos/sessions.nix` + SDDM Relogin); the last
 choice is kept in `~/.config/lelouch/session`. `git checkout lelouch-rice` is the snapshot taken before Mango.
 Rules for building a rice are in `home/rices/mango/README.md`.
+
+## Performance and network
+
+`modules/nixos/performance.nix` (Zen kernel, sched_ext LAVD scheduler, zram, earlyoom, thermald, power profile by AC
+state, Intel video decoding) and `modules/nixos/network.nix` (Wi-Fi power saving off, regulatory domain, BBR, cached
+DNS). Check and compare ping before and after with `bash scripts/verify-performance.sh [--baseline]`. Left out on
+purpose: `mitigations=off`, automatic garbage collection (old generations are kept for GRUB), overclocking.
+The shell never lets an nmcli query trigger a Wi-Fi scan (`--rescan no`): scans cause ping spikes.

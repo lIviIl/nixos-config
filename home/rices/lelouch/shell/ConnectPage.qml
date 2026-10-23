@@ -50,7 +50,7 @@ Item {
 
     Process {
         id: listProc
-        command: ["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list"]
+        command: ["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list", "--rescan", "no"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const best = {};
@@ -175,6 +175,9 @@ Item {
         interval: 1200
         onTriggered: cardProc.running = true
     }
+
+    // One scan when the tab opens (the list itself never triggers scans: they cause ping spikes)
+    Component.onCompleted: Quickshell.execDetached(["nmcli", "dev", "wifi", "rescan"])
 
     // Stop scanning when the tab is left
     Component.onDestruction: {

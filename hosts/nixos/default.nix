@@ -6,6 +6,8 @@
     ../../modules/nixos/base.nix
     ../../modules/nixos/boot.nix
     ../../modules/nixos/desktop.nix
+    ../../modules/nixos/performance.nix
+    ../../modules/nixos/network.nix
     ../../modules/nixos/mango.nix
     ../../modules/nixos/sessions.nix
     ../../modules/nixos/audio.nix
