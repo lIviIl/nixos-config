@@ -8,6 +8,8 @@
     ./apps.nix
     ./desktop
     ./rices/lelouch   # <- change this line to switch rice
+    ./rices/mango
+    ./sessions.nix
   ];
 
   home.username = "Vi";

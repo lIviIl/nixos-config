@@ -14,6 +14,7 @@
       runtimeInputs = [ pkgs.git ];
       text = ''
         cd /home/Vi/nixos-config || exit 1
+        sudo chown -R "$(id -un):$(id -gn)" .git || true
 
         if [ "''${1:-}" = "update" ]; then
           nix flake update

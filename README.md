@@ -72,3 +72,12 @@ clicks unreliable (see `DropPanel.qml`). `Panel.qml` is full-screen only when it
   `Super+Y`. It is applied live with `hyprctl eval` and remembered in `~/.local/state/lelouch/layout.lua`,
   which `home/rices/lelouch/tiling.nix` loads at every Hyprland config load.
 - Workspace labels: edit `glyphs` in `shell/Workspaces.qml`, or drop pictures into `shell/assets/workspaces/`.
+
+## Rices and sessions
+
+Each rice belongs to one login session: `hyprland` runs `home/rices/lelouch`, `mango` runs `home/rices/mango`.
+Both are always built; the session you start decides which one runs (the Lelouch shell is tied to Hyprland's session
+target, Mango's config only loads in Mango). The lock screen's SESSION buttons, or `switch-session NAME`, end the
+current session and log straight back in to the other one (`modules/nixos/sessions.nix` + SDDM Relogin); the last
+choice is kept in `~/.config/lelouch/session`. `git checkout lelouch-rice` is the snapshot taken before Mango.
+Rules for building a rice are in `home/rices/mango/README.md`.

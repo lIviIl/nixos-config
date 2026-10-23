@@ -2,6 +2,12 @@
   description = "Vi's NixOS configuration";
 
   inputs = {
+    # Mango: a dwl-based Wayland compositor (the second rice)
+    mango = {
+      url = "github:mangowm/mango";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     home-manager = {
@@ -29,6 +35,7 @@
         modules = [
           ./hosts/${hostname}
           home-manager.nixosModules.home-manager
+          inputs.mango.nixosModules.mango
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
