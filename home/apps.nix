@@ -22,6 +22,7 @@ in
     enabledExtensions = with spicePkgs.extensions; [
       hidePodcasts
       shuffle
+      adblockify
     ];
     # enabledCustomApps = with spicePkgs.apps; [ ];
   };
