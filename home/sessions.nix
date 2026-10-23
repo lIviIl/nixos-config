@@ -5,9 +5,10 @@ let
     name = "switch-session";
     runtimeInputs = [ pkgs.coreutils pkgs.systemd ];
     text = ''
-      # switch-session [--relock] NAME: end this session; the next login starts desktop NAME (with its rice).
-      # --relock: lock the new session on arrival (only when seamless switching is on).
-      # From a text console (Ctrl+Alt+F2) it saves the choice and restarts the login screen.
+      # switch-session [--relock] NAME: restart the computer into desktop NAME (with its rice).
+      # --relock: lock the new session as soon as it starts (used when switching from a lock screen).
+      # Ending one session and starting another live leaves a black screen on this laptop (the login screen
+      # fails to start after a Wayland desktop ends), so this takes the path that always works: a restart.
       relock=0
       if [ "''${1:-}" = "--relock" ]; then
         relock=1
@@ -36,18 +37,12 @@ let
 
       mkdir -p "$HOME/.config/lelouch" "$HOME/.cache/lelouch"
       printf '%s\n' "$name" > "$HOME/.config/lelouch/session"
-      if [ "$relock" = 1 ] && [ -e /etc/lelouch/seamless ]; then
+      if [ "$relock" = 1 ]; then
         touch "$HOME/.cache/lelouch/relock"
       fi
 
-      if [ "''${XDG_SESSION_TYPE:-}" != wayland ]; then
-        echo "Saved: $name starts at the next login. Restarting the login screen (asks for your password)..."
-        exec sudo systemctl restart display-manager
-      fi
-
-      # The graphical session's id (the shell runs as a user service, which has no XDG_SESSION_ID of its own)
-      sid="''${XDG_SESSION_ID:-$(loginctl show-user "$(id -un)" --property=Display --value)}"
-      exec loginctl terminate-session "$sid"
+      echo "Saved: $name starts at the next login. Restarting..."
+      exec systemctl reboot
     '';
   };
 
@@ -70,13 +65,13 @@ in
   # Launcher entries, so a switch is one search away in either desktop
   xdg.desktopEntries = {
     switch-to-hyprland = {
-      name = "Switch to Hyprland (Lelouch rice)";
+      name = "Switch to Hyprland (Lelouch rice, restarts)";
       exec = "switch-session hyprland";
       terminal = false;
       categories = [ "System" ];
     };
     switch-to-mango = {
-      name = "Switch to Mango";
+      name = "Switch to Mango (restarts)";
       exec = "switch-session mango";
       terminal = false;
       categories = [ "System" ];

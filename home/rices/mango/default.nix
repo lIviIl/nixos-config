@@ -54,7 +54,7 @@ in
       if [ ! -e "$HOME/.cache/lelouch/mango-hint-seen" ]; then
         mkdir -p "$HOME/.cache/lelouch"
         touch "$HOME/.cache/lelouch/mango-hint-seen"
-        kitty --title "Mango" sh -c 'echo "MANGO"; echo; echo "  Super+Enter      terminal"; echo "  Super+D          launcher (type hyprland to switch back)"; echo "  Super+Q          close a window"; echo "  Super+1 to 9     tags (workspaces)"; echo; echo "  Super+Ctrl+H     back to Hyprland (Lelouch rice)"; echo "  Super+Shift+E    back to Hyprland (Lelouch rice)"; echo; echo "Press Enter to close this window."; read -r _' &
+        kitty --title "Mango" sh -c 'echo "MANGO"; echo; echo "  Super+Enter      terminal"; echo "  Super+D          launcher (type hyprland to switch back)"; echo "  Super+Q          close a window"; echo "  Super+1 to 9     tags (workspaces)"; echo; echo "  Super+Ctrl+H     back to Hyprland (restarts the computer)"; echo "  Super+Shift+E    back to Hyprland (restarts the computer)"; echo; echo "Press Enter to close this window."; read -r _' &
       fi
     '';
   };

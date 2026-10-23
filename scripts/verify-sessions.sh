@@ -39,12 +39,12 @@ check "lock screen switcher uses the stable folder" grep -q '/etc/lelouch/waylan
 
 section "The way back from Mango"
 check "login session resets a failing choice"      grep -q "printf 'hyprland" "$repo/modules/nixos/sessions.nix"
-check "switch-session works from a text console"   grep -q 'XDG_SESSION_TYPE' "$repo/home/sessions.nix"
+check "switch-session restarts into the chosen desktop" grep -q "systemctl reboot" "$repo/home/sessions.nix"
 check "Mango key: Super+Shift+E goes back"         grep -q 'SUPER+SHIFT,e,spawn,switch-session hyprland' "$repo/home/rices/mango/default.nix"
 check "Mango key: Super+Ctrl+H goes back"          grep -q 'SUPER+CTRL,h,spawn,switch-session hyprland' "$repo/home/rices/mango/default.nix"
 check "Mango first-start hint"                     grep -q 'mango-hint-seen' "$repo/home/rices/mango/default.nix"
-check "launcher entry: switch to Hyprland"         test -f "$HOME/.local/share/applications/switch-to-hyprland.desktop"
-check "launcher entry: switch to Mango"            test -f "$HOME/.local/share/applications/switch-to-mango.desktop"
+check "launcher entry: switch to Hyprland"         test -f "/etc/profiles/per-user/$USER/share/applications/switch-to-hyprland.desktop"
+check "launcher entry: switch to Mango"            test -f "/etc/profiles/per-user/$USER/share/applications/switch-to-mango.desktop"
 
 section "After the rebuild"
 check "the desktop list exists at $dir" test -d "$dir"

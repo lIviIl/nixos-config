@@ -33,7 +33,7 @@
   # Cached DNS (your router's DNS still comes first; these are only fallbacks)
   services.resolved = {
     enable = true;
-    fallbackDns = [ "1.1.1.1" "9.9.9.9" ];
+    settings.Resolve.FallbackDNS = [ "1.1.1.1" "9.9.9.9" ];
   };
   networking.networkmanager.dns = "systemd-resolved";
 }

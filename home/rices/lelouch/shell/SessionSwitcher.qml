@@ -18,7 +18,7 @@ Item {
     function choose(id) {
         if (!/^[A-Za-z0-9._-]+$/.test(id) || id === current)
             return;
-        note = "Switching to " + id + "...";
+        note = "Restarting into " + id + "...";
         Quickshell.execDetached(["switch-session", "--relock", id]);
     }
 
@@ -64,7 +64,7 @@ Item {
         id: hint
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        text: root.note !== "" ? root.note : "Switching closes every open window"
+        text: root.note !== "" ? root.note : "Switching restarts the computer"
         color: Theme.alpha(Theme.fg, 0.7)
         font.family: Theme.mono
         font.pixelSize: 11
