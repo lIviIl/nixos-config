@@ -7,6 +7,7 @@
     mpv
     imv
     yazi
+    fetch
   ];
 
 programs.obsidian = {
