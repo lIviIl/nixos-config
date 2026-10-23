@@ -5,18 +5,19 @@ let
     name = "switch-session";
     runtimeInputs = [ pkgs.coreutils pkgs.systemd ];
     text = ''
-      # switch-session [--relock] NAME: end this session and start desktop NAME (with its rice) in its place.
-      # --relock: lock the new session as soon as it starts (used when switching from a lock screen).
+      # switch-session [--relock] NAME: end this session; the next login starts desktop NAME (with its rice).
+      # --relock: lock the new session on arrival (only when seamless switching is on).
       relock=0
       if [ "''${1:-}" = "--relock" ]; then
         relock=1
         shift
       fi
       name="''${1:-}"
-      dir=/run/current-system/sw/share/wayland-sessions
+      dir=/etc/lelouch/wayland-sessions
 
       available=""
       for f in "$dir"/*.desktop; do
+        [ -e "$f" ] || continue
         n="$(basename "$f" .desktop)"
         [ "$n" = lelouch ] || available="$available $n"
       done
@@ -26,14 +27,15 @@ let
         exit 1
       fi
 
-      if [ "''${XDG_SESSION_DESKTOP:-}" = "$name" ]; then
+      current="$(printf '%s' "''${XDG_SESSION_DESKTOP:-}" | tr '[:upper:]' '[:lower:]')"
+      if [ "$current" = "$name" ]; then
         echo "already in $name" >&2
         exit 0
       fi
 
       mkdir -p "$HOME/.config/lelouch" "$HOME/.cache/lelouch"
       printf '%s\n' "$name" > "$HOME/.config/lelouch/session"
-      if [ "$relock" = 1 ]; then
+      if [ "$relock" = 1 ] && [ -e /etc/lelouch/seamless ]; then
         touch "$HOME/.cache/lelouch/relock"
       fi
 

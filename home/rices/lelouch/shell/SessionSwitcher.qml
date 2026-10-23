@@ -24,7 +24,7 @@ Item {
 
     Process {
         running: true
-        command: ["sh", "-c", "for f in /run/current-system/sw/share/wayland-sessions/*.desktop; do basename \"$f\" .desktop; done"]
+        command: ["sh", "-c", "for f in /etc/lelouch/wayland-sessions/*.desktop; do basename \"$f\" .desktop; done"]
 
         stdout: StdioCollector {
             onStreamFinished: root.sessions = this.text.split("\n").filter(s => s !== "" && s !== "lelouch")
