@@ -6,4 +6,8 @@
 
   # LocalSend: installs the app and opens TCP and UDP port 53317
   programs.localsend.enable = true;
+
+  # Cloudflare WARP: enables the background routing daemon and opens UDP port 2408
+  services.cloudflare-warp.enable = true;
+  services.cloudflare-warp.openFirewall = true;
 }
