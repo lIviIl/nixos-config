@@ -23,6 +23,9 @@ in
       hidePodcasts
       shuffle
       adblockify
+      beautifulLyrics
+      coverAmbience
+      songStats
     ];
     # enabledCustomApps = with spicePkgs.apps; [ ];
   };
